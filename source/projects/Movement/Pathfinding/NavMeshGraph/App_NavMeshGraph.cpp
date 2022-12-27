@@ -90,8 +90,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eMiddle))
 	{
 		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eMiddle);
-		Elite::Vector2 mouseTarget = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(
-		Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+		Elite::Vector2 mouseTarget = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
 
 		m_pGroup->CalculatePath(mouseTarget, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
 	}
@@ -103,6 +102,11 @@ void App_NavMeshGraph::Update(float deltaTime)
 
 		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
 		m_StartSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+
+		m_SelectionPoints[0] = m_StartSelectionPos;
+		m_SelectionPoints[1] = m_StartSelectionPos;
+		m_SelectionPoints[2] = m_StartSelectionPos;
+		m_SelectionPoints[3] = m_StartSelectionPos;
 	}
 
 	//Update Selection
@@ -123,8 +127,6 @@ void App_NavMeshGraph::Update(float deltaTime)
 		}
 
 		//Draw Selection
-
-
 		Elite::Polygon selectionPolygon{ m_SelectionPoints };
 		DEBUGRENDERER2D->DrawPolygon(&selectionPolygon, m_SelectionColor, DEBUGRENDERER2D->NextDepthSlice());
 	}
