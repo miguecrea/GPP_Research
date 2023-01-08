@@ -8,7 +8,6 @@
 //#include "EGeometry.h"
 #include "EGeometry2DTypes.h"
 #include "EGeometry2DUtilities.h"
-
 #pragma region Polygon
 #pragma region Constructors
 using namespace std;
@@ -26,7 +25,7 @@ Elite::Polygon::Polygon(const std::vector<Vector2>& vertices)
 	m_vPoints.assign(vertices.begin(), vertices.end()); //Copy
 }
 
-Elite::Polygon::Polygon(const std::vector<Vector2>& outerShape, const std::vector<std::vector<Vector2>> &innerShapes)
+Elite::Polygon::Polygon(const std::vector<Vector2>& outerShape, const std::vector<std::vector<Vector2>>& innerShapes)
 {
 	//Store outer shape points into list
 	m_vPoints.assign(outerShape.begin(), outerShape.end()); //Copy
@@ -62,13 +61,15 @@ Elite::Polygon::~Polygon()
 //=== Child functionality ===
 Elite::Polygon* Elite::Polygon::AddChild(std::list<Vector2>& vertices)
 {
-	const Polygon p(vertices); 
-	m_vChildren.push_back(p); 
+	const Polygon p(vertices);
+	m_vChildren.push_back(p);
 	return &m_vChildren[m_vChildren.size() - 1];
 };
 
 void Elite::Polygon::AddChild(const Polygon& p)
-{ m_vChildren.push_back(p); }
+{
+	m_vChildren.push_back(p);
+}
 
 void Elite::Polygon::RemoveChild(const Polygon& p)
 {
@@ -82,31 +83,43 @@ void Elite::Polygon::RemoveChild(const Polygon& p)
 #pragma region GeneralFunctions
 Elite::Vector2 Elite::Polygon::GetCenterPoint() const
 {
-	Vector2 cp; 
-	for (const auto p : m_vPoints) 
-		cp += p; 
+	Vector2 cp;
+	for (const auto p : m_vPoints)
+		cp += p;
 	return cp / static_cast<float>(m_vPoints.size());
 }
 #pragma endregion //GeneralFunctions
 //----------------------------------------------------------
 #pragma region MemberAccess
 bool Elite::Polygon::IsTriangulated() const
-{ return m_isTriangulated; }
+{
+	return m_isTriangulated;
+}
 
 int Elite::Polygon::GetAmountVertices() const
-{ return m_vPoints.size(); }
+{
+	return m_vPoints.size();
+}
 
 const std::list<Elite::Vector2>& Elite::Polygon::GetPoints() const
-{ return m_vPoints; }
+{
+	return m_vPoints;
+}
 
 const std::vector<Elite::Polygon >& Elite::Polygon::GetChildren() const
-{ return m_vChildren; }
+{
+	return m_vChildren;
+}
 
 const std::vector<Elite::Triangle*>& Elite::Polygon::GetTriangles() const
-{ return m_vpTriangles; }
+{
+	return m_vpTriangles;
+}
 
 const std::vector<Elite::Line*>& Elite::Polygon::GetLines() const
-{ return m_vpLines; }
+{
+	return m_vpLines;
+}
 #pragma endregion //MemberAccess
 //----------------------------------------------------------
 #pragma region GettersInformation
@@ -200,7 +213,9 @@ std::vector<Elite::Triangle*> Elite::Polygon::GetAdjacentTrianglesOnLine(const T
 	//Start by getting index of line in matrix
 	auto lRev = Line(l.p2, l.p1);
 	const auto it = std::find_if(m_vpLines.begin(), m_vpLines.end(), [&](const Line* rl)
-	{ return (*rl == l || *rl == lRev); });
+		{
+			return (*rl == l || *rl == lRev);
+		});
 	if (it == m_vpLines.end())
 	{
 		std::cout << "WARNING: line not found!" << std::endl;
@@ -270,26 +285,32 @@ const std::vector<Elite::Triangle*>& Elite::Polygon::Triangulate()
 	//Sort the children. Start by sorting from top to bottom (verices are what matters, not the "center" pos of the polygon!)
 	std::sort(m_vChildren.begin(), m_vChildren.end(),
 		[](const Polygon& p1, const Polygon& p2)
-	{ return p1.GetPosVertMaxYPos() > p2.GetPosVertMaxYPos(); });
+		{
+			return p1.GetPosVertMaxYPos() > p2.GetPosVertMaxYPos();
+		});
 
 	//Copy children as backup after sort
 	const auto children = m_vChildren;
-	
+
+
 	//THEN, we check two elements, if the don't overlap horizontally you don't do anything, else you swap them based on right most object
-	for (auto i = 0; i < static_cast<int>(m_vChildren.size()) - 1; ++i)
+	for (int i = 0; i < int(m_vChildren.size()) - 1; ++i)
 	{
-		if (m_vChildren[i].OverlappingYAxis(m_vChildren[i + 1]))
+		for (int j = i + 1; j < int(m_vChildren.size()); ++j)
 		{
-			//Swap if i.y < i+1.y
-			if (m_vChildren[i].GetPosVertMaxXPos() < m_vChildren[i + 1].GetPosVertMaxXPos())
+			if (m_vChildren[i].OverlappingYAxis(m_vChildren[j]) || m_vChildren[i].GetPosVertMaxYPos() < m_vChildren[j].GetPosVertMaxYPos())
 			{
-				const auto temp = m_vChildren[i];
-				m_vChildren[i] = m_vChildren[i + 1];
-				m_vChildren[i + 1] = temp;
+				//Swap if i.y < i+1.y
+				if (m_vChildren[i].GetPosVertMaxXPos() < m_vChildren[j].GetPosVertMaxXPos() )
+				{
+					const auto temp = m_vChildren[i];
+					m_vChildren[i] = m_vChildren[j];
+					m_vChildren[j] = temp;
+				}
 			}
 		}
-	}
 
+	}
 	//First split polygon
 	while (m_vChildren.size() != 0)
 		Split();
@@ -308,12 +329,19 @@ const std::vector<Elite::Triangle*>& Elite::Polygon::Triangulate()
 		list<Vector2>::const_iterator earListIt = copyPoints.end();
 		for (auto it = copyPoints.begin(); it != copyPoints.end(); ++it)
 		{
-			if (earListIt != copyPoints.end())
-				break;
 			if (IsConvexInPolygon(copyPoints, it) && IsEar(copyPoints, it))
+			{ 
 				earListIt = it;
+				break;
+			}
 		}
-
+		
+		if (earListIt == copyPoints.end())
+		{
+			printf("\n--Error in Triangulation, invalid polygon!\n");
+			break;
+		}
+		
 		//Push triangle
 		Vector2 current, prev, next;
 		GetTriangle(copyPoints, earListIt, current, prev, next);
@@ -332,7 +360,7 @@ const std::vector<Elite::Triangle*>& Elite::Polygon::Triangulate()
 	m_vpTriangles.push_back(lastTriangle);
 
 	//Flag as triangulated for later use
-	m_isTriangulated = true; 
+	m_isTriangulated = true;
 
 #ifdef USE_TRIANGLE_METADATA
 	GenerateLineMatrix();
@@ -424,14 +452,14 @@ bool Elite::Polygon::IsEar(const list<Vector2>& l, const list<Vector2>::const_it
 	//Look at the point list of this polygon as it where a circular list (end attach begin)
 	Vector2 current, prev, next;
 	GetTriangle(l, p, current, prev, next);
-	
+
 	//See if there are any vertices (excluding the ones of the triangle) are in the triangle
 	for (auto it = l.begin(); it != l.end(); ++it)
 	{
 		if (*it == current || *it == prev || *it == next)
 			continue;
 
-		if (PointInTriangle(*it, current, prev, next))
+		if (IsPointInTriangle(*it, current, prev, next))
 			return false;
 	}
 	return true;
@@ -486,7 +514,7 @@ void Elite::Polygon::GenerateLineMatrix()
 #pragma endregion //PrivateGeneralFunctions
 //----------------------------------------------------------
 #pragma region PrivateTriangulationFunctions
-void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polygon& inner, Vector2& pOuter, Vector2& pInner)
+void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polygon& inner, std::list<Vector2>::const_iterator& pOuter, std::list<Vector2>::const_iterator& pInner)
 {
 	//1. Find vertex with the biggest x value of the inner polygon AND biggest x value of outer polygon (used for size ray)
 	const auto maxInnerPoint = std::max_element(inner.m_vPoints.begin(), inner.m_vPoints.end(),
@@ -497,26 +525,37 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 	const float rayMaxX = maxOuterPoint->x;
 
 	//Store inner point to output
-	pInner = *maxInnerPoint;
-
+	pInner = maxInnerPoint;
 	// --- 2. Based on found inner point, find mutually visisble outer point
 	//2.1 Intersect ray M + t(1,0) with all directed edges of OUTER (M is left of edges) - Result point I
 	//http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
 	const Vector2 furthestPointRay = Vector2(rayMaxX, maxInnerPoint->y);
-	Vector2 p = pInner;
-	Vector2 r = furthestPointRay - pInner; //Ray
+	Vector2 p = *pInner;
+	Vector2 r = furthestPointRay - *pInner; //Ray
 	Vector2 I = ZeroVector2; //Found intersection
-	Vector2 intersectedLine[2] = { ZeroVector2, ZeroVector2 }; //Store to find point P if I is found
+
+	std::list<Vector2>::const_iterator intersectedLine[2] = { outer.m_vPoints.end(), outer.m_vPoints.end() }; //Store to find point P if I is found
+	std::list<Vector2>::const_iterator nearestIt{ outer.m_vPoints.end() };
+
 	for (auto it = outer.m_vPoints.begin(); it != outer.m_vPoints.end(); ++it)
 	{
 		const auto next = std::next(it);
 		//If on right of innerPoint AND has a next point (to make line)
 		if (it->x > maxInnerPoint->x && next != outer.m_vPoints.end())
 		{
-			//Poly line segment
-			const Vector2 q = *it;
-			Vector2 s = *next - q;
 
+
+			Vector2 point1 = *it;
+			Vector2 point2 = *next;
+
+			if (point2.y > point1.y) //make sure point1.y is always higher than point1.y -> this prevents identical but reversed lines to end up in different intersection points due to rounding errors
+			{
+				point2 = point1;
+				point1 = *next;
+			}
+
+			Vector2 q = point1;
+			Vector2 s = point2 - q;
 			//Capture parallel and collinear cases
 			if (Cross(r, s) == 0)
 			{
@@ -524,13 +563,22 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 				{
 					//Get closest vertex (OR the correct way see link :)) - We don't check
 					//overlap because the max x of our ray is within the boundaries
+
 					if (it->x < next->x)
-						I = *it;
+					{
+						if (I.x >= it->x)
+							I = *it;
+					}
 					else
-						I = *next;
+					{
+						if (I.x >= next->x)
+							I = *next;
+					}
 				}
 				continue;
 			}
+
+
 
 			//If not parallel or collinear, search point, calculate T and U
 			float crossRS = Cross(r, s);
@@ -541,16 +589,26 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 			if (t >= 0 && t <= 1 && u >= 0 && u <= 1)
 			{
 				Vector2 tempI = p + (t * r);
-				auto distanceTemp = abs(Distance(p, tempI));
-				auto distanceI = abs(Distance(p, I));
+
+				//take this point if none was taken before
+				bool takePoint = intersectedLine[0] == outer.m_vPoints.end() && intersectedLine[1] == outer.m_vPoints.end();
+
+
 				//Check if closer than other intersected lines, if it is, replace stored line!
-				if (intersectedLine[0] == ZeroVector2 && intersectedLine[1] == ZeroVector2
-					|| distanceTemp < distanceI)
+				if (!takePoint)
+				{
+					float distanceTemp = abs(DistanceSquared(p, tempI));
+					float distanceI = abs(DistanceSquared(p, I));
+					takePoint = distanceTemp <= distanceI;
+				}
+
+				if (takePoint)
 				{
 					//Determine point with T and U
 					I = p + (t * r);
-					intersectedLine[0] = *it;
-					intersectedLine[1] = *next;
+
+					intersectedLine[0] = it;
+					intersectedLine[1] = next;
 				}
 			}
 		}
@@ -560,18 +618,19 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 	const auto IOuter = std::find(outer.m_vPoints.begin(), outer.m_vPoints.end(), I);
 	if (IOuter != outer.m_vPoints.end()) //Point is vertex of outer, so I is correct vertex!
 	{
-		pOuter = I;
+		pOuter = IOuter;
+
 		return;
 	}
 
 	//2.3 ELSE I is interior point on edge, select vertex with maximum x value of the hitted edge - Result point P
-	Vector2 P = intersectedLine[(intersectedLine[0].x > intersectedLine[1].x ? 0 : 1)];
-	
+	std::list<Vector2>::const_iterator P = intersectedLine[(intersectedLine[0]->x > intersectedLine[1]->x ? 0 : 1)];
+
 	//2.4 Search for reflex vertices (excluding P if it's a reflex)
 	std::list<Vector2> reflexVertices;
 	for (auto it = outer.m_vPoints.begin(); it != outer.m_vPoints.end(); ++it)
 	{
-		if (*it == P)
+		if (*it == *P)
 			continue;
 
 		if (!outer.IsConvexInPolygon(outer.m_vPoints, it))
@@ -582,7 +641,7 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 	std::vector<Vector2> pointsInTriangle;
 	for (auto it = reflexVertices.begin(); it != reflexVertices.end(); ++it)
 	{
-		if (PointInTriangle(*it, pInner, I, P))
+		if (PointInTriangle(*it, *pInner, I, *P))
 			pointsInTriangle.push_back(*it);
 	}
 
@@ -595,6 +654,7 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 	//2.6 ELSE at least one reflex vertex lies in triangle (M,I,P). Search for reflex R that minimizes the angle
 	//between (1,0) and the line (M,R). If found more choose one, else use the one found and terminate algorithm
 	auto smallestAngle = 2 * M_PI;
+	Vector2 smallestAnglePoint;
 	for (const auto point : pointsInTriangle)
 	{
 		//Angle between r and (M,p)
@@ -603,10 +663,14 @@ void Elite::Polygon::FindMutualVisibleVertices(const Polygon& outer, const Polyg
 		if (angle < smallestAngle)
 		{
 			smallestAngle = angle;
-			pOuter = point;
+			smallestAnglePoint = point;
 		}
 	}
+
+	pOuter = std::find(outer.m_vPoints.begin(), outer.m_vPoints.end(), smallestAnglePoint);
 }
+
+
 
 void Elite::Polygon::Split()
 {
@@ -616,11 +680,9 @@ void Elite::Polygon::Split()
 	for (auto child : m_vChildren)
 	{
 		//Find mutually visible vertices
-		Vector2 pInner, pOuter;
-		FindMutualVisibleVertices(*this, child, pOuter, pInner);
-		//Based on mutually visible vertices, merge meshes at the split
-		const auto itOuter = std::find(m_vPoints.begin(), m_vPoints.end(), pOuter); //Find where to start inserting
-		const auto itInner = std::find(child.m_vPoints.begin(), child.m_vPoints.end(), pInner);
+		std::list<Vector2>::const_iterator  itInner, itOuter;
+		FindMutualVisibleVertices(*this, child, itOuter, itInner);
+
 		//insert child polygon vertices to outer starting from the found inner vertex
 		std::list<Vector2> mergeableChild;
 		for (auto it = itInner; it != child.m_vPoints.end(); ++it)
@@ -650,7 +712,7 @@ void Elite::Polygon::Split()
 #pragma endregion //Polygon
 
 Elite::Rect::Rect()
-	: Rect({0.f, 0.f}, 0.f, 0.f)
+	: Rect({ 0.f, 0.f }, 0.f, 0.f)
 {
 }
 

@@ -24,11 +24,6 @@ Flock::Flock(
 	m_pWanderBehavior = new Wander();
 	m_pEvadeBehavior = new Evade();
 
-	m_pCohesionBehavior = new Cohesion(this);
-	m_pSeparationBehavior = new Separation(this);
-	m_pVelMatchBehavior = new VelocityMatch(this);
-
-	m_pBlendedSteering = new BlendedSteering({ { m_pCohesionBehavior,0.f }, { m_pSeparationBehavior,1.f }, { m_pVelMatchBehavior,0.f },{m_pWanderBehavior,0.0f },{m_pSeekBehavior,0.0f} });
 	m_pPrioritySteering = new PrioritySteering({ m_pEvadeBehavior,m_pBlendedSteering });
 
 	m_pCellSpace = new CellSpace(m_WorldSize, m_WorldSize, 19, 19);
@@ -70,11 +65,8 @@ Flock::~Flock()
 	SAFE_DELETE(m_pEvadeBehavior);
 	SAFE_DELETE(m_pSeekBehavior);
 	SAFE_DELETE(m_pWanderBehavior);
-	SAFE_DELETE(m_pCohesionBehavior);
-	SAFE_DELETE(m_pSeparationBehavior);
 	SAFE_DELETE(m_pBlendedSteering);
 	SAFE_DELETE(m_pPrioritySteering);
-	SAFE_DELETE(m_pVelMatchBehavior);
 	SAFE_DELETE(m_pAgentToEvade);
 
 	SAFE_DELETE(m_pCellSpace);
@@ -281,7 +273,7 @@ void Flock::FlockDebugRendering(SteeringAgent* pAgent)
 			m_DebugVertices[2] = { agentPosition.x - m_NeighborhoodRadius,agentPosition.y - m_NeighborhoodRadius };
 			m_DebugVertices[3] = { agentPosition.x - m_NeighborhoodRadius,agentPosition.y + m_NeighborhoodRadius };
 
-			DEBUGRENDERER2D->DrawPolygon(&Elite::Polygon{ m_DebugVertices }, m_Blue, 1);
+			DEBUGRENDERER2D->DrawPolygon(&Elite::Polygon{ m_DebugVertices }, m_LightBlue, 1);
 		}
 
 		for (int index{}; index < m_NrOfNeighbors; ++index)

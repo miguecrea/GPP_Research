@@ -50,8 +50,8 @@ SteeringOutput Flee::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 //****
 SteeringOutput Arrive::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 {
-	const float stopDistance{ 2.f };
-	const float slowRadius{ 15.f };
+	const float stopDistance{ 1.f };
+	const float slowRadius{ 5.f };
 	SteeringOutput steering = {};
 
 	steering.LinearVelocity = m_Target.Position - pAgent->GetPosition();

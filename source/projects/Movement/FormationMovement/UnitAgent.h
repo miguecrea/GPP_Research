@@ -22,8 +22,11 @@ public:
 	//--- Unit Functions ---
 	void SetFormationOffset(Elite::Vector2& offset);
 
+	void SetNeighborhoodRadius(float radius) { m_NeighborhoodRadius = radius; };
+	float GetNeighborhoodRadius() { return m_NeighborhoodRadius; };
 protected:
 	//--- Datamembers ---
 	Elite::Vector2 m_FormationOffset{};
+	float m_NeighborhoodRadius{ 10.f };
 };
 #endif

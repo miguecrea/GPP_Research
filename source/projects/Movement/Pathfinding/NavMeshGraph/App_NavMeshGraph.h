@@ -58,7 +58,8 @@ private:
 	std::vector<Elite::Vector2> m_SelectionPoints;
 	Elite::Color m_SelectionColor{ 0.f,0.f,1.f };
 
-	bool m_IsSelecting{ false };
+	bool m_IsSelectingLeft{ false };
+	bool m_IsSelectingRight{ false };
 
 	// --Graph--
 	Elite::NavGraph* m_pNavGraph = nullptr;
@@ -69,11 +70,6 @@ private:
 	std::vector<Elite::Vector2> m_DebugNodePositions;
 	std::vector<Elite::Vector2> m_VisitedNodePositions;
 	static bool sShowPolygon;
-	static bool sShowGraph;
-	static bool sDrawPortals;
-	static bool sDrawFinalPath;
-	static bool sDrawNonOptimisedPath;
-	static bool sDrawNodesUsedForAStar;
 
 	void UpdateImGui();
 private:

@@ -47,9 +47,6 @@ private:
 	
 	//Steering Behaviors
 	Seek* m_pSeekBehavior = nullptr;
-	Separation* m_pSeparationBehavior = nullptr;
-	Cohesion* m_pCohesionBehavior = nullptr;
-	VelocityMatch* m_pVelMatchBehavior = nullptr;
 	Wander* m_pWanderBehavior = nullptr;
 	Evade* m_pEvadeBehavior = nullptr;
 
@@ -63,7 +60,7 @@ private:
 	float m_EvadeRadius{ 10.f };
 
 	const Elite::Color m_Red{ 1.f,0.f,0.f };
-	const Elite::Color m_Blue{ 0.f,0.f,1.f };
+	const Elite::Color m_LightBlue{ 0.f,0.f,1.f };
 	const Elite::Color m_DebugGreen{ 0.f,1.f,0.f,0.5f };
 
 	//Space Partitioning

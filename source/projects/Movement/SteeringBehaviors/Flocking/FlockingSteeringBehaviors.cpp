@@ -1,15 +1,15 @@
 #include "stdafx.h"
 #include "FlockingSteeringBehaviors.h"
-#include "Flock.h"
-#include "../SteeringAgent.h"
+#include "projects/Movement/FormationMovement/UnitAgent.h"
 #include "../SteeringHelpers.h"
+#include "projects/Movement/FormationMovement/Group.h"
 
 
 //*******************
 //COHESION (FLOCKING)
 SteeringOutput Cohesion::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 {
-	m_Target = (m_pFlock->GetNrOfNeighbors() > 0 ? m_pFlock->GetAverageNeighborPos() : pAgent->GetPosition());
+	m_Target = (m_pGroup->GetNrOfNeighbors() > 0 ? m_pGroup->GetAverageNeighborPos() : pAgent->GetPosition());
 	return Seek::CalculateSteering(deltaT, pAgent);
 }
 
@@ -21,11 +21,11 @@ SteeringOutput Separation::CalculateSteering(float deltaT, SteeringAgent* pAgent
 
 	SteeringOutput steering{};
 
-	const int nrOfNeighbors{ m_pFlock->GetNrOfNeighbors() };
+	const int nrOfNeighbors{ m_pGroup->GetNrOfNeighbors() };
 
 	for (int index{}; index < nrOfNeighbors; ++index)
 	{
-		currentVector = pAgent->GetPosition() - m_pFlock->GetNeighbors()[index]->GetPosition();
+		currentVector = pAgent->GetPosition() - m_pGroup->GetNeighbors()[index]->GetPosition();
 		steering.LinearVelocity += currentVector / currentVector.MagnitudeSquared();
 	}
 
@@ -40,9 +40,9 @@ SteeringOutput Separation::CalculateSteering(float deltaT, SteeringAgent* pAgent
 SteeringOutput VelocityMatch::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 {
 	SteeringOutput steering{};
-	if (m_pFlock->GetNrOfNeighbors() > 0)
+	if (m_pGroup->GetNrOfNeighbors() > 0)
 	{
-		steering.LinearVelocity = m_pFlock->GetAverageNeighborVelocity();
+		steering.LinearVelocity = m_pGroup->GetAverageNeighborVelocity();
 	}
 
 	steering.LinearVelocity.Normalize();

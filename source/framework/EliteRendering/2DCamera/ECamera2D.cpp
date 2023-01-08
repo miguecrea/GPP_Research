@@ -13,10 +13,10 @@ Camera2D::Camera2D(unsigned int width, unsigned int height):
 //=== Base Functions ===
 void Camera2D::Update()
 {
-	if (INPUTMANAGER->IsMouseButtonDown(Elite::InputMouseButton::eRight) && !m_isMoveLocked)
+	if (INPUTMANAGER->IsMouseButtonDown(Elite::InputMouseButton::eMiddle) && !m_isMoveLocked)
 	{
 		m_isRightMouseDown = true;
-		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eRight);
+		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eMiddle);
 		m_lastPosition = ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
 	}
 	if (INPUTMANAGER->IsMouseMoving() && m_isRightMouseDown && !m_isMoveLocked)
@@ -26,7 +26,7 @@ void Camera2D::Update()
 		const Elite::Vector2 difference = pos - m_lastPosition;
 		m_center -= difference;
 	}
-	if (INPUTMANAGER->IsMouseButtonUp(Elite::InputMouseButton::eRight))
+	if (INPUTMANAGER->IsMouseButtonUp(Elite::InputMouseButton::eMiddle))
 		m_isRightMouseDown = false;
 
 	if (INPUTMANAGER->IsMouseScrolling() && !m_isZoomLocked)

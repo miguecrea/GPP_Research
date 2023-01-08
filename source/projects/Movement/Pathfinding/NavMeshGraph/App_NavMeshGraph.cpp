@@ -16,11 +16,6 @@ using namespace Elite;
 
 //Statics
 bool App_NavMeshGraph::sShowPolygon = true;
-bool App_NavMeshGraph::sShowGraph = false;
-bool App_NavMeshGraph::sDrawPortals = false;
-bool App_NavMeshGraph::sDrawFinalPath = true;
-bool App_NavMeshGraph::sDrawNonOptimisedPath = false;
-bool App_NavMeshGraph::sDrawNodesUsedForAStar = false;
 
 //Destructor
 App_NavMeshGraph::~App_NavMeshGraph()
@@ -48,19 +43,19 @@ void App_NavMeshGraph::Start()
 	DEBUGRENDERER2D->GetActiveCamera()->SetCenter(Elite::Vector2(12.9361f, 0.2661f));
 
 	//----------- WORLD ------------
-	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(25.f, 12.f), 45.0f, 7.0f));
-	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(-35.f, 7.f), 14.0f, 10.0f));
-	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(-13.f, -8.f), 30.0f, 2.0f));
+	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(125.f, 120.f), 45.0f, 7.0f));
+	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(-135.f, 17.f), 14.0f, 10.0f));
+	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(-113.f, -81.f), 30.0f, 2.0f));
 	m_vNavigationColliders.push_back(new NavigationColliderElement(Elite::Vector2(15.f, -21.f), 50.0f, 3.0f));
 
 	//----------- NAVMESH  ------------
 	std::list<Elite::Vector2> baseBox
-	{ { -60, 30 },{ -60, -30 },{ 60, -30 },{ 60, 30 } };
+	{ { -200, 200 },{ -200, -200 },{ 200, -200 },{ 200, 200 } };
 
 	m_pNavGraph = new Elite::NavGraph(Elite::Polygon(baseBox), m_AgentRadius);
 
 	//----------- GROUP ------------
-	m_pGroup = new Group();
+	m_pGroup = new Group(30);
 
 	//----------- AGENT ------------
 	//m_pArriveBehavior->SetSlowRadius(3.0f);
@@ -73,7 +68,7 @@ void App_NavMeshGraph::Start()
 		m_pAgents.emplace_back(new UnitAgent());
 		m_pAgents[index]->SetMaxLinearSpeed(m_AgentSpeed);
 		m_pAgents[index]->SetAutoOrient(true);
-		m_pAgents[index]->SetMass(0.1f);
+		m_pAgents[index]->SetMass(1.f);
 		m_pAgents[index]->SetPosition(Vector2{ 0.f,0.f + index * 2.f });
 	}
 
@@ -86,19 +81,40 @@ void App_NavMeshGraph::Start()
 
 void App_NavMeshGraph::Update(float deltaTime)
 {
+	//////////////////////////////////////////
+	//  Right mouse button
+	/////////////////////////////////////////
+
+	//if (INPUTMANAGER->IsMouseButtonDown(InputMouseButton::eRight))
+	//{
+	//	m_IsSelectingLeft = true;
+	//
+	//	auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
+	//	m_StartSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+	//
+	//	m_SelectionPoints[0] = m_StartSelectionPos;
+	//	m_SelectionPoints[1] = m_StartSelectionPos;
+	//	m_SelectionPoints[2] = m_StartSelectionPos;
+	//	m_SelectionPoints[3] = m_StartSelectionPos;
+	//}
+
 	//Update target/path based on input
-	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eMiddle))
+	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eRight))
 	{
-		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eMiddle);
+		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eRight);
 		Elite::Vector2 mouseTarget = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
 
 		m_pGroup->CalculatePath(mouseTarget, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
 	}
 
+	//////////////////////////////////////////
+	//  Left mouse button
+	/////////////////////////////////////////
+
 	//Start selecting
 	if (INPUTMANAGER->IsMouseButtonDown(InputMouseButton::eLeft))
 	{
-		m_IsSelecting = true;
+		m_IsSelectingLeft = true;
 
 		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
 		m_StartSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
@@ -110,7 +126,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 	}
 
 	//Update Selection
-	if (m_IsSelecting)
+	if (m_IsSelectingLeft)
 	{
 		//Update boundaries of the selection
 		if (INPUTMANAGER->IsMouseMoving())
@@ -134,7 +150,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 	//Stop selection
 	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eLeft))
 	{
-		m_IsSelecting = false;
+		m_IsSelectingLeft = false;
 
 		const Vector2 max{ std::max(m_StartSelectionPos.x,m_EndSelectionPos.x),std::max(m_StartSelectionPos.y,m_EndSelectionPos.y) };
 		const Vector2 min{ (std::min)(m_StartSelectionPos.x,m_EndSelectionPos.x),(std::min)(m_StartSelectionPos.y,m_EndSelectionPos.y) };
@@ -157,15 +173,13 @@ void App_NavMeshGraph::Update(float deltaTime)
 		}
 	}
 	
-
+	//////////////////////////////////////////
+	//  Rest
+	/////////////////////////////////////////
 
 	m_pGroup->Update(deltaTime);
 
 	UpdateImGui();
-	for (UnitAgent* pAgent : m_pAgents)
-	{
-		pAgent->Update(deltaTime);
-	}
 }
 
 void App_NavMeshGraph::Render(float deltaTime) const
@@ -175,11 +189,6 @@ void App_NavMeshGraph::Render(float deltaTime) const
 		pAgent->Render(deltaTime);
 	}
 
-	if (sShowGraph)
-	{
-		m_GraphRenderer.RenderGraph(m_pNavGraph, true, true);
-	}
-
 	if (sShowPolygon)
 	{
 		DEBUGRENDERER2D->DrawPolygon(m_pNavGraph->GetNavMeshPolygon(),
@@ -187,51 +196,6 @@ void App_NavMeshGraph::Render(float deltaTime) const
 		DEBUGRENDERER2D->DrawSolidPolygon(m_pNavGraph->GetNavMeshPolygon(),
 			Color(0.0f, 0.5f, 0.1f, 0.05f), 0.4f);
 	}
-
-	if (sDrawPortals)
-	{
-		for (const auto &portal : m_Portals)
-		{
-			DEBUGRENDERER2D->DrawSegment(portal.Line.p1, portal.Line.p2, Color(1.f, .5f, 0.f), -0.1f);
-			//Draw just p1 p2
-			std::string p1{ "p1" };
-			std::string p2{ "p2" };
-			//Add the positions to the debugdrawing
-			//p1 +=" x:" + std::to_string(portal.Line.p1.x) + ", y: " + std::to_string(portal.Line.p1.y);
-			//p2 +=" x:" + std::to_string(portal.Line.p2.x) + ", y: " + std::to_string(portal.Line.p2.y);
-			DEBUGRENDERER2D->DrawString(portal.Line.p1, p1.c_str(), Color(1.f, .5f, 0.f), -0.1f);
-			DEBUGRENDERER2D->DrawString(portal.Line.p2, p2.c_str(), Color(1.f, .5f, 0.f), -0.1f);
-		}
-	}
-
-	if (sDrawNonOptimisedPath)
-	{
-		for (auto pathNode : m_DebugNodePositions)
-			DEBUGRENDERER2D->DrawCircle(pathNode, 2.0f, Color(0.f, 0.f, 1.f), -0.45f);
-
-		if (sDrawNodesUsedForAStar)
-		{
-			for (auto pathNode : m_VisitedNodePositions)
-				DEBUGRENDERER2D->DrawCircle(pathNode, 2.0f, Color(1.f, 1.f, 0.f), -0.45f);
-		}
-	}
-
-	if (sDrawFinalPath && m_pGroup->GetPath().size() > 0)
-	{
-
-		for (auto pathPoint : m_pGroup->GetPath())
-			DEBUGRENDERER2D->DrawCircle(pathPoint, 2.0f, Color(1.f, 0.f, 0.f), -0.2f);
-
-		DEBUGRENDERER2D->DrawSegment(m_pGroup->GetCenterPos(), m_pGroup->GetPath()[0], Color(1.f, 0.0f, 0.0f), -0.2f);
-		for (size_t i = 0; i < m_pGroup->GetPath().size() - 1; i++)
-		{
-			float g = float(i) / m_pGroup->GetPath().size();
-			DEBUGRENDERER2D->DrawSegment(m_pGroup->GetPath()[i], m_pGroup->GetPath()[i+1], Color(1.f, g, g), -0.2f);
-		}
-			
-	}
-
-
 }
 
 void App_NavMeshGraph::UpdateImGui()
@@ -273,15 +237,7 @@ void App_NavMeshGraph::UpdateImGui()
 		ImGui::Spacing();
 
 		ImGui::Checkbox("Show Polygon", &sShowPolygon);
-		ImGui::Checkbox("Show Graph", &sShowGraph);
-		ImGui::Checkbox("Show Portals", &sDrawPortals);
-		ImGui::Checkbox("Show Path Nodes", &sDrawNonOptimisedPath);
-		if (sDrawNonOptimisedPath)
-		{
-			ImGui::Checkbox("Show All A* Nodes", &sDrawNodesUsedForAStar);
-		}
 
-		ImGui::Checkbox("Show Final Path", &sDrawFinalPath);
 		ImGui::Spacing();
 		ImGui::Spacing();
 
@@ -293,6 +249,16 @@ void App_NavMeshGraph::UpdateImGui()
 			}
 		}
 		
+		ImGui::Separator();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		ImGui::Text("FORMATIONS");
+		//ImGui::RadioButton("Line - Press L", m_CurrentFormation == Formation::Line);
+		//ImGui::RadioButton("Circle - Press C", m_CurrentFormation == Formation::Circle);
+		ImGui::Spacing();
+		ImGui::Spacing();
+
 		//End
 		ImGui::PopAllowKeyboardFocus();
 		ImGui::End();

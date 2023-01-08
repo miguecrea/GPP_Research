@@ -148,7 +148,7 @@ namespace Elite
 		void GenerateLineMatrix();
 
 		//Private Triangulation Functions
-		void FindMutualVisibleVertices(const Polygon& outer, const Polygon& inner, Vector2& pOuter, Vector2& pInner);
+		void FindMutualVisibleVertices(const Polygon& outer, const Polygon& inner, std::list<Vector2>::const_iterator& pOuter, std::list<Vector2>::const_iterator& pInner);
 		void Split();
 	};
 #pragma endregion //Polygon

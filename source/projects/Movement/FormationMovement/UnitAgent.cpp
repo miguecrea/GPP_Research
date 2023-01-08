@@ -5,3 +5,4 @@ void UnitAgent::SetFormationOffset(Elite::Vector2& offset)
 {
 	m_FormationOffset = offset;
 }
+
