@@ -205,12 +205,10 @@
     <ClCompile Include="projects\Movement\FormationMovement\Group.cpp" />
     <ClCompile Include="projects\Movement\FormationMovement\UnitAgent.cpp" />
     <ClCompile Include="projects\Movement\Pathfinding\NavMeshGraph\App_NavMeshGraph.cpp" />
-    <ClCompile Include="projects\Movement\SteeringBehaviors\CombinedSteering\App_CombinedSteering.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\CombinedSteering\CombinedSteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Flocking\Flock.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Flocking\FlockingSteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\SpacePartitioning\SpacePartitioning.cpp" />
-    <ClCompile Include="projects\Movement\SteeringBehaviors\Steering\App_SteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Obstacle.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\SteeringAgent.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Steering\SteeringBehaviors.cpp" />
@@ -293,12 +291,10 @@
     <ClInclude Include="projects\Movement\FormationMovement\UnitAgent.h" />
     <ClInclude Include="projects\Movement\Pathfinding\NavMeshGraph\App_NavMeshGraph.h" />
     <ClInclude Include="projects\App_Selector.h" />
-    <ClInclude Include="projects\Movement\SteeringBehaviors\CombinedSteering\App_CombinedSteering.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\CombinedSteering\CombinedSteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Flocking\Flock.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Flocking\FlockingSteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\SpacePartitioning\SpacePartitioning.h" />
-    <ClInclude Include="projects\Movement\SteeringBehaviors\Steering\App_SteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Obstacle.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\SteeringAgent.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Steering\SteeringBehaviors.h" />

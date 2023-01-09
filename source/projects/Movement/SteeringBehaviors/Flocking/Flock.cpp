@@ -24,7 +24,7 @@ Flock::Flock(
 	m_pWanderBehavior = new Wander();
 	m_pEvadeBehavior = new Evade();
 
-	m_pPrioritySteering = new PrioritySteering({ m_pEvadeBehavior,m_pBlendedSteering });
+	m_pPrioritySteering = new PrioritySteering({ m_pEvadeBehavior,m_pBlendedLineSteering });
 
 	m_pCellSpace = new CellSpace(m_WorldSize, m_WorldSize, 19, 19);
 
@@ -65,7 +65,7 @@ Flock::~Flock()
 	SAFE_DELETE(m_pEvadeBehavior);
 	SAFE_DELETE(m_pSeekBehavior);
 	SAFE_DELETE(m_pWanderBehavior);
-	SAFE_DELETE(m_pBlendedSteering);
+	SAFE_DELETE(m_pBlendedLineSteering);
 	SAFE_DELETE(m_pPrioritySteering);
 	SAFE_DELETE(m_pAgentToEvade);
 
@@ -180,11 +180,11 @@ void Flock::UpdateAndRenderUI()
 	ImGui::Checkbox("Debug Rendering", &m_CanDebugRender);
 	ImGui::Checkbox("Space Partitioning", &m_EnableSpacePartitioning);
 
-	ImGui::SliderFloat("Cohesion", &m_pBlendedSteering->GetWeightedBehaviorsRef()[0].weight, 0.f, 1.f, "%.2");
-	ImGui::SliderFloat("Separation", &m_pBlendedSteering->GetWeightedBehaviorsRef()[1].weight, 0.f, 1.f, "%.2");
-	ImGui::SliderFloat("VelocityMatch", &m_pBlendedSteering->GetWeightedBehaviorsRef()[2].weight, 0.f, 1.f, "%.2");
-	ImGui::SliderFloat("Wander", &m_pBlendedSteering->GetWeightedBehaviorsRef()[3].weight, 0.f, 1.f, "%.2");
-	ImGui::SliderFloat("Seek", &m_pBlendedSteering->GetWeightedBehaviorsRef()[4].weight, 0.f, 1.f, "%.2");
+	ImGui::SliderFloat("Cohesion", &m_pBlendedLineSteering->GetWeightedBehaviorsRef()[0].weight, 0.f, 1.f, "%.2");
+	ImGui::SliderFloat("Separation", &m_pBlendedLineSteering->GetWeightedBehaviorsRef()[1].weight, 0.f, 1.f, "%.2");
+	ImGui::SliderFloat("VelocityMatch", &m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight, 0.f, 1.f, "%.2");
+	ImGui::SliderFloat("Wander", &m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight, 0.f, 1.f, "%.2");
+	ImGui::SliderFloat("Seek", &m_pBlendedLineSteering->GetWeightedBehaviorsRef()[4].weight, 0.f, 1.f, "%.2");
 
 	//End
 	ImGui::PopAllowKeyboardFocus();
@@ -238,9 +238,9 @@ void Flock::SetTarget_Seek(TargetData target)
 
 float* Flock::GetWeight(ISteeringBehavior* pBehavior) 
 {
-	if (m_pBlendedSteering)
+	if (m_pBlendedLineSteering)
 	{
-		auto& weightedBehaviors = m_pBlendedSteering->GetWeightedBehaviorsRef();
+		auto& weightedBehaviors = m_pBlendedLineSteering->GetWeightedBehaviorsRef();
 		auto it = find_if(weightedBehaviors.begin(),
 			weightedBehaviors.end(),
 			[pBehavior](BlendedSteering::WeightedBehavior el)

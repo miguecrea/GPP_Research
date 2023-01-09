@@ -16,11 +16,9 @@
     <ClCompile Include="framework\EliteRendering\SDLIntegration\SDLDebugRenderer2D\SDLDebugRenderer2D.cpp" />
     <ClCompile Include="framework\EliteUI\EImmediateUI.cpp" />
     <ClCompile Include="framework\EliteMath\EMatrix2x3.cpp" />
-    <ClCompile Include="projects\Movement\SteeringBehaviors\Steering\App_SteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Steering\SteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Obstacle.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\SteeringAgent.cpp" />
-    <ClCompile Include="projects\Movement\SteeringBehaviors\CombinedSteering\App_CombinedSteering.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\CombinedSteering\CombinedSteeringBehaviors.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Flocking\Flock.cpp" />
     <ClCompile Include="projects\Movement\SteeringBehaviors\Flocking\FlockingSteeringBehaviors.cpp" />
@@ -84,12 +82,10 @@
     <ClInclude Include="framework\EliteMath\EMatrix2x3.h" />
     <ClInclude Include="projects\App_MachineLearning\DirectedGraph.h" />
     <ClInclude Include="framework\EliteMath\FMatrix.h" />
-    <ClInclude Include="projects\Movement\SteeringBehaviors\Steering\App_SteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Steering\SteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Obstacle.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\SteeringAgent.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\SteeringHelpers.h" />
-    <ClInclude Include="projects\Movement\SteeringBehaviors\CombinedSteering\App_CombinedSteering.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\CombinedSteering\CombinedSteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Flocking\FlockingSteeringBehaviors.h" />
     <ClInclude Include="projects\Movement\SteeringBehaviors\Flocking\Flock.h" />

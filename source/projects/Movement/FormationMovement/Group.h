@@ -5,6 +5,7 @@
 class Seek;
 class Arrive;
 class Evade;
+class Face;
 
 class Separation;
 class Cohesion;
@@ -44,7 +45,7 @@ public:
 	std::vector<Elite::Vector2> GetPath() const;
 
 	//Steering
-	void SetTarget_Seek(TargetData target);
+	void SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation = Formation::Circle);
 	void CalculatePath(const Elite::Vector2& destiation, Elite::NavGraph * pNavGraph, std::vector<Elite::Vector2>& debugNodePositions, std::vector<Elite::Portal>& portals, std::vector<Elite::Vector2>& visitedNodePositions);
 private:
 	void RegisterNeighbors(UnitAgent* pAgent);
@@ -58,21 +59,23 @@ private:
 	std::vector<Elite::Vector2> m_vPath;
 	
 	//Steering Behaviors
-	TargetData m_Target = {};
-
 	std::vector<UnitAgent*> m_pNeighbors;
 	int m_NrOfNeighbors = 0;
 
 	Seek* m_pSeekBehavior = nullptr;
 	Seek* m_pSeekABehavior = nullptr;
 	Seek* m_pSeekBBehavior = nullptr;
+	Seek* m_pSeekOtherSideBehavior = nullptr;
+	Seek* m_pSeekDesiredLocationBehavior = nullptr;
 	Separation* m_pSeparationBehavior = nullptr;
 	Cohesion* m_pCohesionBehavior = nullptr;
 	VelocityMatch* m_pVelMatchBehavior = nullptr;
 	Arrive* m_pArriveBehavior = nullptr;
 	Evade* m_pEvadeBehavior = nullptr;
+	Face* m_pFaceBehavior = nullptr;
 
-	BlendedSteering* m_pBlendedSteering = nullptr;
+	BlendedSteering* m_pBlendedLineSteering = nullptr;
+	BlendedSteering* m_pBlendedCircleSteering = nullptr;
 	PrioritySteering* m_pPrioritySteering = nullptr;
 
 	bool m_CanDebugRender{ true };
@@ -85,7 +88,10 @@ private:
 	const Elite::Color m_LightBlue{ 0.5f,0.5f,1.f };
 	const Elite::Color m_DebugGreen{ 0.f,1.f,0.f,0.5f };
 
+	//Formations
 	Formation m_CurrentFormation{ Formation::Line };
+	Elite::Vector2 m_DesiredFormationCenter{};
+	Elite::Vector2 m_FormationDifference{};
 
 	Group(const Group& other);
 	Group& operator=(const Group& other);

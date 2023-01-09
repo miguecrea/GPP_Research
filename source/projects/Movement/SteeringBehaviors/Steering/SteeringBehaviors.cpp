@@ -89,7 +89,7 @@ SteeringOutput Face::CalculateSteering(float deltaT, SteeringAgent* pAgent)
 	SteeringOutput steering = {};
 
 	const Vector2 desiredDirection{ m_Target.Position - pAgent->GetPosition() };
-	const Vector2 currentDirection{ OrientationToVector(pAgent->GetRotation() + ToRadians(90.0f)) };
+	const Vector2 currentDirection{ OrientationToVector(pAgent->GetRotation()) };
 
 	const float angle{ AngleBetween(currentDirection, desiredDirection) };
 	const float stopAngle{ 0.1f };

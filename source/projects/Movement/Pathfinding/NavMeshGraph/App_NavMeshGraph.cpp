@@ -67,7 +67,7 @@ void App_NavMeshGraph::Start()
 	{
 		m_pAgents.emplace_back(new UnitAgent());
 		m_pAgents[index]->SetMaxLinearSpeed(m_AgentSpeed);
-		m_pAgents[index]->SetAutoOrient(true);
+		m_pAgents[index]->SetAutoOrient(false);
 		m_pAgents[index]->SetMass(1.f);
 		m_pAgents[index]->SetPosition(Vector2{ 0.f,0.f + index * 2.f });
 	}
@@ -75,37 +75,50 @@ void App_NavMeshGraph::Start()
 	//-------- SELECTION -------
 	for (int index{}; index < 4; ++index)
 	{
-		m_SelectionPoints.push_back(Vector2{});
+		m_LeftSelectionPoints.push_back(Vector2{});
 	}
 }
 
 void App_NavMeshGraph::Update(float deltaTime)
 {
 	//////////////////////////////////////////
-	//  Right mouse button
+	//  Middle mouse button
 	/////////////////////////////////////////
 
-	//if (INPUTMANAGER->IsMouseButtonDown(InputMouseButton::eRight))
-	//{
-	//	m_IsSelectingLeft = true;
-	//
-	//	auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
-	//	m_StartSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
-	//
-	//	m_SelectionPoints[0] = m_StartSelectionPos;
-	//	m_SelectionPoints[1] = m_StartSelectionPos;
-	//	m_SelectionPoints[2] = m_StartSelectionPos;
-	//	m_SelectionPoints[3] = m_StartSelectionPos;
-	//}
+	if (INPUTMANAGER->IsMouseButtonDown(InputMouseButton::eRight))
+	{
+		m_IsSelectingRight = true;
+	
+		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eRight);
+		m_StartRightSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+	}
+
+	//Update Selection
+	if (m_IsSelectingRight)
+	{
+		//Update boundaries of the selection
+		if (INPUTMANAGER->IsMouseMoving())
+		{
+			auto mouseData = INPUTMANAGER->GetMouseData(Elite::eMouseMotion);
+			m_EndRightSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));	
+
+			m_DifferenceRight = m_EndRightSelectionPos - m_StartRightSelectionPos;
+		}
+
+		//Draw Selection
+		DEBUGRENDERER2D->DrawPoint(m_StartRightSelectionPos, 5.f, m_SelectionColor, -1.f);
+		DEBUGRENDERER2D->DrawPoint(m_StartRightSelectionPos - m_DifferenceRight, 5.f, m_SelectionColor, -1.f);
+		DEBUGRENDERER2D->DrawPoint(m_StartRightSelectionPos + m_DifferenceRight, 5.f, m_SelectionColor, -1.f);
+	}
 
 	//Update target/path based on input
 	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eRight))
 	{
-		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eRight);
-		Elite::Vector2 mouseTarget = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+		m_IsSelectingRight = false;
 
-		m_pGroup->CalculatePath(mouseTarget, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
-	}
+		m_pGroup->CalculatePath(m_StartRightSelectionPos, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
+		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight);
+	}												
 
 	//////////////////////////////////////////
 	//  Left mouse button
@@ -117,12 +130,12 @@ void App_NavMeshGraph::Update(float deltaTime)
 		m_IsSelectingLeft = true;
 
 		auto mouseData = INPUTMANAGER->GetMouseData(Elite::InputType::eMouseButton, Elite::InputMouseButton::eLeft);
-		m_StartSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+		m_StartLeftSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
 
-		m_SelectionPoints[0] = m_StartSelectionPos;
-		m_SelectionPoints[1] = m_StartSelectionPos;
-		m_SelectionPoints[2] = m_StartSelectionPos;
-		m_SelectionPoints[3] = m_StartSelectionPos;
+		m_LeftSelectionPoints[0] = m_StartLeftSelectionPos;
+		m_LeftSelectionPoints[1] = m_StartLeftSelectionPos;
+		m_LeftSelectionPoints[2] = m_StartLeftSelectionPos;
+		m_LeftSelectionPoints[3] = m_StartLeftSelectionPos;
 	}
 
 	//Update Selection
@@ -132,18 +145,18 @@ void App_NavMeshGraph::Update(float deltaTime)
 		if (INPUTMANAGER->IsMouseMoving())
 		{
 			auto mouseData = INPUTMANAGER->GetMouseData(Elite::eMouseMotion);
-			m_EndSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+			m_EndLeftSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
 
-			const Vector2 difference{ m_EndSelectionPos - m_StartSelectionPos };
+			const Vector2 difference{ m_EndLeftSelectionPos - m_StartLeftSelectionPos };
 
-			m_SelectionPoints[0] = m_StartSelectionPos;
-			m_SelectionPoints[1] = m_StartSelectionPos + Vector2{ difference.x,0.f };
-			m_SelectionPoints[2] = m_EndSelectionPos;
-			m_SelectionPoints[3] = m_StartSelectionPos + Vector2{ 0.f,difference.y };
+			m_LeftSelectionPoints[0] = m_StartLeftSelectionPos;
+			m_LeftSelectionPoints[1] = m_StartLeftSelectionPos + Vector2{ difference.x,0.f };
+			m_LeftSelectionPoints[2] = m_EndLeftSelectionPos;
+			m_LeftSelectionPoints[3] = m_StartLeftSelectionPos + Vector2{ 0.f,difference.y };
 		}
 
 		//Draw Selection
-		Elite::Polygon selectionPolygon{ m_SelectionPoints };
+		Elite::Polygon selectionPolygon{ m_LeftSelectionPoints };
 		DEBUGRENDERER2D->DrawPolygon(&selectionPolygon, m_SelectionColor, DEBUGRENDERER2D->NextDepthSlice());
 	}
 
@@ -152,8 +165,8 @@ void App_NavMeshGraph::Update(float deltaTime)
 	{
 		m_IsSelectingLeft = false;
 
-		const Vector2 max{ std::max(m_StartSelectionPos.x,m_EndSelectionPos.x),std::max(m_StartSelectionPos.y,m_EndSelectionPos.y) };
-		const Vector2 min{ (std::min)(m_StartSelectionPos.x,m_EndSelectionPos.x),(std::min)(m_StartSelectionPos.y,m_EndSelectionPos.y) };
+		const Vector2 max{ std::max(m_StartLeftSelectionPos.x,m_EndLeftSelectionPos.x),std::max(m_StartLeftSelectionPos.y,m_EndLeftSelectionPos.y) };
+		const Vector2 min{ (std::min)(m_StartLeftSelectionPos.x,m_EndLeftSelectionPos.x),(std::min)(m_StartLeftSelectionPos.y,m_EndLeftSelectionPos.y) };
 
 		for (UnitAgent* pAgent : m_pAgents)
 		{

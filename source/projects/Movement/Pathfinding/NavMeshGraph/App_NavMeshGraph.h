@@ -52,10 +52,14 @@ private:
 	std::vector<NavigationColliderElement*> m_vNavigationColliders = {};
 
 	// --Selection--
-	Elite::Vector2 m_StartSelectionPos{};
-	Elite::Vector2 m_EndSelectionPos{};
+	Elite::Vector2 m_StartLeftSelectionPos{};
+	Elite::Vector2 m_EndLeftSelectionPos{};
 
-	std::vector<Elite::Vector2> m_SelectionPoints;
+	Elite::Vector2 m_StartRightSelectionPos{};
+	Elite::Vector2 m_EndRightSelectionPos{};
+	Elite::Vector2 m_DifferenceRight{};
+
+	std::vector<Elite::Vector2> m_LeftSelectionPoints;
 	Elite::Color m_SelectionColor{ 0.f,0.f,1.f };
 
 	bool m_IsSelectingLeft{ false };

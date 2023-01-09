@@ -50,7 +50,8 @@ private:
 	Wander* m_pWanderBehavior = nullptr;
 	Evade* m_pEvadeBehavior = nullptr;
 
-	BlendedSteering* m_pBlendedSteering = nullptr;
+	BlendedSteering* m_pBlendedLineSteering = nullptr;
+	BlendedSteering* m_pBlendedCircleSteering = nullptr;
 	PrioritySteering* m_pPrioritySteering = nullptr;
 
 	float* GetWeight(ISteeringBehavior* pBehaviour);

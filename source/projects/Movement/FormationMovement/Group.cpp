@@ -19,15 +19,25 @@ Group::Group(
 	m_pSeekBehavior = new Seek();
 	m_pSeekABehavior = new Seek();
 	m_pSeekBBehavior = new Seek();
+	m_pSeekOtherSideBehavior = new Seek();
+	m_pSeekDesiredLocationBehavior = new Seek();
+
 	m_pEvadeBehavior = new Evade();
 	m_pArriveBehavior = new Arrive();
-	
+	m_pFaceBehavior = new Face();
+
 	m_pCohesionBehavior = new Cohesion(this);
 	m_pSeparationBehavior = new Separation(this);
 	m_pVelMatchBehavior = new VelocityMatch(this);
-	m_pBlendedSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,5.f }, { m_pSeekBBehavior,5.f }, { m_pVelMatchBehavior,1.f } });
-	//m_pBlendedSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,5.f }, { m_pSeekBBehavior,5.f }, { m_pVelMatchBehavior,1.f } }); //Nice but they split up when moving
 	m_pPrioritySteering = new PrioritySteering({ m_pSeparationBehavior,m_pArriveBehavior });
+
+
+
+	//Circle
+	m_pBlendedCircleSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f},{m_pSeekOtherSideBehavior,0.f},{m_pSeekDesiredLocationBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f}});
+
+	//Line
+	m_pBlendedLineSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,2.f }, { m_pSeekBBehavior,2.f }, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
 }
 
 Group::~Group()
@@ -35,13 +45,17 @@ Group::~Group()
 	SAFE_DELETE(m_pSeekBehavior);
 	SAFE_DELETE(m_pSeekABehavior);
 	SAFE_DELETE(m_pSeekBBehavior);
+	SAFE_DELETE(m_pSeekOtherSideBehavior);
+	SAFE_DELETE(m_pSeekDesiredLocationBehavior);
 	SAFE_DELETE(m_pEvadeBehavior);
 	SAFE_DELETE(m_pArriveBehavior);
 	SAFE_DELETE(m_pCohesionBehavior);
 	SAFE_DELETE(m_pSeparationBehavior);
 	SAFE_DELETE(m_pPrioritySteering);
-	SAFE_DELETE(m_pBlendedSteering);
+	SAFE_DELETE(m_pBlendedLineSteering);
+	SAFE_DELETE(m_pBlendedCircleSteering);
 	SAFE_DELETE(m_pVelMatchBehavior);
+	SAFE_DELETE(m_pFaceBehavior);
 
 	m_pAgents.clear();
 }
@@ -50,9 +64,9 @@ void Group::Update(float deltaT)
 {
 	if (m_CurrentFormation == Formation::Line)
 	{
-		Elite::Vector2 A{ 30.f,30.f };
-		Elite::Vector2 B{ -30.f, -30.f };
-	
+		Elite::Vector2 A{ m_FormationDifference };
+		Elite::Vector2 B{ -m_FormationDifference };
+
 		if (m_vPath.size() > 0)
 		{
 			Elite::Vector2 targetPos{ m_vPath[0] };
@@ -65,38 +79,78 @@ void Group::Update(float deltaT)
 		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, -1);
 
 		Elite::Vector2 AB{ B - A };
-	
+
 		for (UnitAgent* pAgent : m_pAgents)
 		{
 			RegisterNeighbors(pAgent);
 	
 			Elite::Vector2 P = pAgent->GetPosition();
-	
+			
+			//Dot(QA,QP)=0 -> perpendicular
 			float t = (-P.x * AB.x + A.x * AB.x - P.y * AB.y + A.y * AB.y) / (-AB.x * AB.x - AB.y * AB.y);
 			
 			t = (std::min)(1.f, t);
 			t = std::max(0.f, t);
 			
-			m_pArriveBehavior->SetTarget(A + AB * t);
 			m_pSeekBehavior->SetTarget(A + AB * t);
 
 			if (t < 0.5f)
 			{
-				m_pBlendedSteering->GetWeightedBehaviorsRef()[2].weight = t;
-				m_pBlendedSteering->GetWeightedBehaviorsRef()[3].weight = 2.f*(1.f-t);
+				//Seek A and Seek B
+				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = t;
+				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 2.f*(1.f-t);
 			}
 			else
 			{
-				m_pBlendedSteering->GetWeightedBehaviorsRef()[2].weight = 2.f*t;
-				m_pBlendedSteering->GetWeightedBehaviorsRef()[3].weight = 1.f-t;
+				//Seek A and Seek B
+				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = 2.f*t;
+				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 1.f-t;
 			}
 
 
 			m_pSeekABehavior->SetTarget(A);
 			m_pSeekBBehavior->SetTarget(B);
 
-			pAgent->SetSteeringBehavior(m_pBlendedSteering);
+			//Rotate 90 degrees -> (-y,x)
+			m_pFaceBehavior->SetTarget(Elite::Vector2{ P.x - AB.y, P.y + AB.x });
+
+			pAgent->SetSteeringBehavior(m_pBlendedLineSteering);
 	
+			pAgent->Update(deltaT);
+		}
+	}
+	else if (m_CurrentFormation == Formation::Circle)
+	{
+		Elite::Vector2 targetPos{ m_DesiredFormationCenter };
+
+		if (m_vPath.size() > 0)
+		{
+			targetPos = m_vPath[0];
+		}
+
+		Elite::Vector2 averageGroupPos{ GetCenterPos() };
+
+		const float radius{ m_FormationDifference.Magnitude() };
+		const float averageDistanceSquared{ (targetPos - averageGroupPos).MagnitudeSquared() };
+
+		DEBUGRENDERER2D->DrawPoint(targetPos, 5.f, Color{ 1.f,0.f,0.f }, -1);
+		DEBUGRENDERER2D->DrawCircle(targetPos, radius, Color{ 1.f,0.f,0.f }, -1);
+
+		for (UnitAgent* pAgent : m_pAgents)
+		{
+			RegisterNeighbors(pAgent);
+
+			Elite::Vector2 P{ pAgent->GetPosition() };
+			Elite::Vector2 direction{ P - averageGroupPos };
+
+			direction.Normalize();
+
+			m_pSeekBehavior->SetTarget(targetPos + direction * radius);
+			m_pSeekDesiredLocationBehavior->SetTarget(averageGroupPos + direction * radius);
+			m_pFaceBehavior->SetTarget(P + direction);
+
+			pAgent->SetSteeringBehavior(m_pBlendedCircleSteering);
+
 			pAgent->Update(deltaT);
 		}
 	}
@@ -237,9 +291,11 @@ Elite::Vector2 Group::GetAverageNeighborVelocity() const
 	return averageVelocity / static_cast<float>(m_NrOfNeighbors);
 }
 
-void Group::SetTarget_Seek(TargetData target)
+void Group::SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation)
 {
-	m_pSeekBehavior->SetTarget(target);
+	m_DesiredFormationCenter = center;
+	m_FormationDifference = difference;
+	m_CurrentFormation = formation;
 }
 
 
