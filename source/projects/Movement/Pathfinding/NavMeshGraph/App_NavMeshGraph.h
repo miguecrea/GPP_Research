@@ -74,6 +74,11 @@ private:
 	std::vector<Elite::Vector2> m_DebugNodePositions;
 	std::vector<Elite::Vector2> m_VisitedNodePositions;
 	static bool sShowPolygon;
+	static bool sFormAfterArrival;
+	static bool sIsLine;
+	static bool sIsCircle;
+	static bool sRecalculateFormation;
+	static Formation sCurrentFormation;
 
 	void UpdateImGui();
 private:

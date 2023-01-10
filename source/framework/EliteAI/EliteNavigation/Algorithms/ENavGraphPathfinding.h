@@ -12,7 +12,7 @@ namespace Elite
 	class NavMeshPathfinding
 	{
 	public:
-		static std::vector<Vector2> FindPath(Vector2 startPos, Vector2 endPos, NavGraph* pNavGraph, std::vector<Vector2>& debugNodePositions, std::vector<Portal>& debugPortals, std::vector<Vector2>& visitedNodePositions)
+		static std::vector<Vector2> FindPath(Vector2 startPos, Vector2 endPos, NavGraph* pNavGraph, std::vector<Vector2>& debugNodePositions, std::vector<Portal>& debugPortals, std::vector<Vector2>& visitedNodePositions, float formationWidth = 0.f)
 		{
 			//Reset debug positions
 			debugNodePositions.clear();
@@ -96,7 +96,7 @@ namespace Elite
 			}
 
 			//Run optimiser on new graph, MAKE SURE the A star path is working properly before starting this section and uncommenting this!!!
-			debugPortals = SSFA::FindPortals(finalNodes, pNavGraph->GetNavMeshPolygon());
+			debugPortals = SSFA::FindPortals(finalNodes, pNavGraph->GetNavMeshPolygon(),formationWidth);
 			finalPath = SSFA::OptimizePortals(debugPortals);
 
 			return finalPath;

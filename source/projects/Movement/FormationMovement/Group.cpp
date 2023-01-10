@@ -34,10 +34,11 @@ Group::Group(
 
 
 	//Circle
-	m_pBlendedCircleSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f},{m_pSeekOtherSideBehavior,0.f},{m_pSeekDesiredLocationBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f}});
-
+	m_pBlendedCircleFormAtLocationSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f} });
+	m_pBlendedCircleSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f},{m_pSeekDesiredLocationBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f} });
 	//Line
-	m_pBlendedLineSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,2.f }, { m_pSeekBBehavior,2.f }, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
+	m_pBlendedLineFormAtLocationSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,2.f }, { m_pSeekBBehavior,2.f }, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
+	m_pBlendedLineSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,0.f }, { m_pSeekBBehavior,0.f },{m_pSeekDesiredLocationBehavior,15.f}, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
 }
 
 Group::~Group()
@@ -53,138 +54,31 @@ Group::~Group()
 	SAFE_DELETE(m_pSeparationBehavior);
 	SAFE_DELETE(m_pPrioritySteering);
 	SAFE_DELETE(m_pBlendedLineSteering);
+	SAFE_DELETE(m_pBlendedLineFormAtLocationSteering);
 	SAFE_DELETE(m_pBlendedCircleSteering);
 	SAFE_DELETE(m_pVelMatchBehavior);
 	SAFE_DELETE(m_pFaceBehavior);
+	SAFE_DELETE(m_pBlendedCircleFormAtLocationSteering);
 
 	m_pAgents.clear();
 }
 
 void Group::Update(float deltaT)
 {
-	if (m_CurrentFormation == Formation::Line)
+	Elite::Vector2 targetPos{ m_DesiredFormationCenter };
+
+	if (m_Path.size() > 0)
 	{
-		Elite::Vector2 A{ m_FormationDifference };
-		Elite::Vector2 B{ -m_FormationDifference };
+		targetPos = m_Path[0];
 
-		if (m_vPath.size() > 0)
+		if (Elite::DistanceSquared(GetCenterPos() , m_Path[0]) < m_UnitSpace * m_UnitSpace)
 		{
-			Elite::Vector2 targetPos{ m_vPath[0] };
-
-			A += targetPos;
-			B += targetPos;
-		}
-
-		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, -1);
-		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, -1);
-
-		Elite::Vector2 AB{ B - A };
-
-		for (UnitAgent* pAgent : m_pAgents)
-		{
-			RegisterNeighbors(pAgent);
-	
-			Elite::Vector2 P = pAgent->GetPosition();
-			
-			//Dot(QA,QP)=0 -> perpendicular
-			float t = (-P.x * AB.x + A.x * AB.x - P.y * AB.y + A.y * AB.y) / (-AB.x * AB.x - AB.y * AB.y);
-			
-			t = (std::min)(1.f, t);
-			t = std::max(0.f, t);
-			
-			m_pSeekBehavior->SetTarget(A + AB * t);
-
-			if (t < 0.5f)
-			{
-				//Seek A and Seek B
-				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = t;
-				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 2.f*(1.f-t);
-			}
-			else
-			{
-				//Seek A and Seek B
-				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = 2.f*t;
-				m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 1.f-t;
-			}
-
-
-			m_pSeekABehavior->SetTarget(A);
-			m_pSeekBBehavior->SetTarget(B);
-
-			//Rotate 90 degrees -> (-y,x)
-			m_pFaceBehavior->SetTarget(Elite::Vector2{ P.x - AB.y, P.y + AB.x });
-
-			pAgent->SetSteeringBehavior(m_pBlendedLineSteering);
-	
-			pAgent->Update(deltaT);
-		}
-	}
-	else if (m_CurrentFormation == Formation::Circle)
-	{
-		Elite::Vector2 targetPos{ m_DesiredFormationCenter };
-
-		if (m_vPath.size() > 0)
-		{
-			targetPos = m_vPath[0];
-		}
-
-		Elite::Vector2 averageGroupPos{ GetCenterPos() };
-
-		const float radius{ m_FormationDifference.Magnitude() };
-		const float averageDistanceSquared{ (targetPos - averageGroupPos).MagnitudeSquared() };
-
-		DEBUGRENDERER2D->DrawPoint(targetPos, 5.f, Color{ 1.f,0.f,0.f }, -1);
-		DEBUGRENDERER2D->DrawCircle(targetPos, radius, Color{ 1.f,0.f,0.f }, -1);
-
-		for (UnitAgent* pAgent : m_pAgents)
-		{
-			RegisterNeighbors(pAgent);
-
-			Elite::Vector2 P{ pAgent->GetPosition() };
-			Elite::Vector2 direction{ P - averageGroupPos };
-
-			direction.Normalize();
-
-			m_pSeekBehavior->SetTarget(targetPos + direction * radius);
-			m_pSeekDesiredLocationBehavior->SetTarget(averageGroupPos + direction * radius);
-			m_pFaceBehavior->SetTarget(P + direction);
-
-			pAgent->SetSteeringBehavior(m_pBlendedCircleSteering);
-
-			pAgent->Update(deltaT);
+			//If we reached the next point of the path. Remove it 
+			m_Path.erase(std::remove(m_Path.begin(), m_Path.end(), m_Path[0]));
 		}
 	}
 
-	//if (m_vPath.size() > 0)
-	//{
-	//	if (m_vPath.size() == 1)
-	//	{
-	//		//We have reached the last node
-	//		for (UnitAgent* pAgent : m_pAgents)
-	//		{
-	//			//Individual goal
-	//			m_pArriveBehavior->SetTarget(m_vPath[0]);
-	//			pAgent->SetSteeringBehavior(m_pArriveBehavior);
-	//			pAgent->Update(deltaT);
-	//		}
-	//	}
-	//	else
-	//	{
-	//		//Move to the next node
-	//		for (UnitAgent* pAgent : m_pAgents)
-	//		{
-	//			pAgent->SetSteeringBehavior(m_pBlendedSteering);
-	//		}
-	//		m_pSeekBehavior->SetTarget(m_vPath[0] + Vector2{ 3.f,3.f });
-	//		m_pEvadeBehavior->SetTarget(m_vPath[0]);
-	//	}
-	//
-	//	if (Elite::DistanceSquared(GetCenterPos(), m_vPath[0]) < m_UnitSpace * m_UnitSpace)
-	//	{
-	//		//If we reached the next point of the path. Remove it 
-	//		m_vPath.erase(std::remove(m_vPath.begin(), m_vPath.end(), m_vPath[0]));
-	//	}
-	//}
+	CalculateFormationMovement(deltaT, targetPos);
 }
 
 void Group::Render(float deltaT)
@@ -200,6 +94,7 @@ void Group::AddUnitToGroup(UnitAgent* pAgent)
 		{
 			m_pAgents.emplace_back(pAgent);
 			pAgent->SetBodyColor(m_LightBlue);
+			pAgent->SetGroup(this);
 		}
 	}
 }
@@ -211,6 +106,9 @@ void Group::RemoveUnitFromGroup(UnitAgent* pAgent)
 		m_pAgents.erase(std::remove(m_pAgents.begin(), m_pAgents.end(), pAgent), m_pAgents.end());
 		pAgent->SetBodyColor(Color{ 1.f,1.f,0.f });
 		pAgent->SetSteeringBehavior(nullptr);
+		pAgent->SetLinearVelocity(Elite::Vector2{ 0.f,0.f });
+		pAgent->SetAngularVelocity(0.f);
+		pAgent->SetGroup(nullptr);
 	}
 }
 
@@ -245,12 +143,175 @@ Elite::Vector2 Group::GetAverageVelocity() const
 
 std::vector<Elite::Vector2> Group::GetPath() const
 {
-	return m_vPath;
+	return m_Path;
 }
 
-void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vector<Vector2>& debugNodePositions,std::vector<Portal>& portals,std::vector<Vector2>& visitedNodePositions)
+void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vector<Vector2>& debugNodePositions,std::vector<Portal>& debugPortals,std::vector<Vector2>& visitedNodePositions)
 {
-	m_vPath = NavMeshPathfinding::FindPath(GetCenterPos(), destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions);
+	const float formationOffset{ m_FormationDifference.Magnitude() + 0.5f};
+	Elite::Vector2 currentCenter{ GetCenterPos() };
+
+	//Not working 100% correctly -> crop the portals
+	//m_Path = NavMeshPathfinding::FindPath(currentCenter, destiation, pNavGraph, debugNodePositions, debugPortals, visitedNodePositions, formationOffset + m_UnitSpace);
+
+	m_Path = NavMeshPathfinding::FindPath(currentCenter, destiation, pNavGraph, debugNodePositions, debugPortals, visitedNodePositions);
+
+	if (m_Path.size() > 0)
+	{
+		Elite::Vector2 direction{};
+		Elite::Vector2 rotatedDirection{};
+
+		Elite::Vector2 previousDirection{ m_Path[0] - currentCenter };
+		previousDirection.Normalize();
+
+		//Don't move the start and end positions
+		for (int index{ 0 }; index < static_cast<int>(m_Path.size()) - 1; ++index)
+		{
+			direction = m_Path[index + 1] - m_Path[index];
+			direction.Normalize();
+
+			rotatedDirection.x = -previousDirection.y;
+			rotatedDirection.y = previousDirection.x;
+
+			//Left or right
+			float cross{ Cross(direction, previousDirection) };
+
+			m_Path[index] += (cross > 0.f ? 1.f : -1.f) * rotatedDirection * formationOffset;
+
+			previousDirection = direction;
+		}
+	}
+}
+
+void Group::CalculateFormationMovement(float deltaT, const Elite::Vector2& targetPos)
+{
+	Elite::Vector2 averageGroupPos{ GetCenterPos() };
+
+	switch (m_CurrentFormation)
+	{
+	case Formation::Line:
+	{
+		Elite::Vector2 A{ targetPos - m_FormationDifference };
+		Elite::Vector2 B{ targetPos + m_FormationDifference };
+
+		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, -1);
+		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, -1);
+
+		if (m_FormAfterArrival)
+		{
+			Elite::Vector2 AB{ B - A };
+
+			for (UnitAgent* pAgent : m_pAgents)
+			{
+				RegisterNeighbors(pAgent);
+
+				Elite::Vector2 P{ pAgent->GetPosition() };
+
+				//Dot(QA,QP)=0 -> perpendicular
+				float t = (-P.x * AB.x + A.x * AB.x - P.y * AB.y + A.y * AB.y) / (-AB.x * AB.x - AB.y * AB.y);
+
+				t = (std::min)(1.f, t);
+				t = std::max(0.f, t);
+
+				m_pSeekBehavior->SetTarget(A + AB * t);
+
+				if (t < 0.5f)
+				{
+					//Seek A and Seek B
+					m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = t;
+					m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 3.f * (1.f - t);
+				}
+				else
+				{
+					//Seek A and Seek B
+					m_pBlendedLineSteering->GetWeightedBehaviorsRef()[2].weight = 3.f * t;
+					m_pBlendedLineSteering->GetWeightedBehaviorsRef()[3].weight = 1.f - t;
+				}
+
+
+				m_pSeekABehavior->SetTarget(A);
+				m_pSeekBBehavior->SetTarget(B);
+
+				//Rotate 90 degrees -> (-y,x)
+				m_pFaceBehavior->SetTarget(Elite::Vector2{ P.x - AB.y, P.y + AB.x });
+
+				pAgent->SetSteeringBehavior(m_pBlendedLineFormAtLocationSteering);
+
+				pAgent->Update(deltaT);
+			}
+		}
+		else
+		{
+			Elite::Vector2 currentA{ GetCenterPos() - m_FormationDifference };
+			Elite::Vector2 currentB{ GetCenterPos() + m_FormationDifference };
+			Elite::Vector2 AB{ currentB - currentA };
+
+			for (UnitAgent* pAgent : m_pAgents)
+			{
+				RegisterNeighbors(pAgent);
+
+				Elite::Vector2 P{ pAgent->GetPosition() };
+
+				//Dot(QA,QP)=0 -> perpendicular
+				float t = (-P.x * AB.x + currentA.x * AB.x - P.y * AB.y + currentA.y * AB.y) / (-AB.x * AB.x - AB.y * AB.y);
+
+				t = (std::min)(1.f, t);
+				t = std::max(0.f, t);
+
+				m_pSeekBehavior->SetTarget(A + AB * t);
+				m_pSeekDesiredLocationBehavior->SetTarget(currentA + AB * t);
+
+				//Rotate 90 degrees -> (-y,x)
+				m_pFaceBehavior->SetTarget(Elite::Vector2{ P.x - AB.y, P.y + AB.x });
+
+				pAgent->SetSteeringBehavior(m_pBlendedLineSteering);
+
+				pAgent->Update(deltaT);
+			}
+		}
+	}
+	break;
+	case Formation::Circle:
+	{
+		const float radius{ m_FormationDifference.Magnitude() };
+		const float averageDistanceSquared{ (targetPos - averageGroupPos).MagnitudeSquared() };
+
+		DEBUGRENDERER2D->DrawPoint(targetPos, 5.f, Color{ 1.f,1.f,0.f }, -0.9f);
+		DEBUGRENDERER2D->DrawCircle(targetPos, radius, Color{ 1.f,1.f,0.f }, -0.9f);
+
+		DEBUGRENDERER2D->DrawPoint(m_DesiredFormationCenter, 5.f, Color{ 1.f,0.f,0.f }, -1.f);
+		DEBUGRENDERER2D->DrawCircle(m_DesiredFormationCenter, radius, Color{ 1.f,0.f,0.f }, -1.f);
+
+		for (UnitAgent* pAgent : m_pAgents)
+		{
+			RegisterNeighbors(pAgent);
+
+			Elite::Vector2 P{ pAgent->GetPosition() };
+			Elite::Vector2 currentDirection{ P - averageGroupPos };
+
+			currentDirection.Normalize();
+
+			if (m_FormAfterArrival)
+			{
+				m_pSeekBehavior->SetTarget(targetPos + currentDirection * radius);
+				m_pFaceBehavior->SetTarget(P + currentDirection);
+
+				pAgent->SetSteeringBehavior(m_pBlendedCircleFormAtLocationSteering);
+			}
+			else
+			{
+				m_pSeekBehavior->SetTarget(targetPos + currentDirection * radius);
+				m_pSeekDesiredLocationBehavior->SetTarget(averageGroupPos + currentDirection * radius);
+				m_pFaceBehavior->SetTarget(P + currentDirection);
+
+				pAgent->SetSteeringBehavior(m_pBlendedCircleSteering);
+			}
+
+			pAgent->Update(deltaT);
+		}
+	}
+	break;
+	}
 }
 
 void Group::RegisterNeighbors(UnitAgent* pAgent)
@@ -291,11 +352,12 @@ Elite::Vector2 Group::GetAverageNeighborVelocity() const
 	return averageVelocity / static_cast<float>(m_NrOfNeighbors);
 }
 
-void Group::SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation)
+void Group::SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation, bool formAfterArrival)
 {
 	m_DesiredFormationCenter = center;
 	m_FormationDifference = difference;
 	m_CurrentFormation = formation;
+	m_FormAfterArrival = formAfterArrival;
 }
 
 

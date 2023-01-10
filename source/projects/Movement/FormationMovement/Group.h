@@ -16,8 +16,6 @@ class UnitAgent;
 class BlendedSteering;
 class PrioritySteering;
 
-enum class Formation { Line, Circle, Square };
-
 class Group final
 {
 public:
@@ -45,18 +43,18 @@ public:
 	std::vector<Elite::Vector2> GetPath() const;
 
 	//Steering
-	void SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation = Formation::Circle);
+	void SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation, bool formAfterArrival);
 	void CalculatePath(const Elite::Vector2& destiation, Elite::NavGraph * pNavGraph, std::vector<Elite::Vector2>& debugNodePositions, std::vector<Elite::Portal>& portals, std::vector<Elite::Vector2>& visitedNodePositions);
 private:
 	void RegisterNeighbors(UnitAgent* pAgent);
-
+	void CalculateFormationMovement(float deltaT, const Elite::Vector2& targetPos);
 	//Datamembers
 	// --Group--
 	int m_MaxGroupSize = 0;
 	std::vector<UnitAgent*> m_pAgents;
 	
 	// --Pathfinder--
-	std::vector<Elite::Vector2> m_vPath;
+	std::vector<Elite::Vector2> m_Path;
 	
 	//Steering Behaviors
 	std::vector<UnitAgent*> m_pNeighbors;
@@ -75,14 +73,18 @@ private:
 	Face* m_pFaceBehavior = nullptr;
 
 	BlendedSteering* m_pBlendedLineSteering = nullptr;
+	BlendedSteering* m_pBlendedLineFormAtLocationSteering = nullptr;
 	BlendedSteering* m_pBlendedCircleSteering = nullptr;
+	BlendedSteering* m_pBlendedCircleFormAtLocationSteering = nullptr;
 	PrioritySteering* m_pPrioritySteering = nullptr;
+
+	bool m_FormAfterArrival{ false };
 
 	bool m_CanDebugRender{ true };
 
 	float m_EvadeRadius{ 10.f };
 
-	const float m_UnitSpace{ 5.f };
+	const float m_UnitSpace{ 3.f };
 
 	const Elite::Color m_Red{ 1.f,0.f,0.f };
 	const Elite::Color m_LightBlue{ 0.5f,0.5f,1.f };

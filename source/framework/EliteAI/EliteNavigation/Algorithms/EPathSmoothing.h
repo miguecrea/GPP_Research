@@ -27,7 +27,7 @@ namespace Elite
 		//https://gamedev.stackexchange.com/questions/68302/how-does-the-simple-stupid-funnel-algorithm-work
 		static std::vector<Portal> FindPortals(
 			const std::vector<NavGraphNode*>& nodePath,
-			Polygon* navMeshPolygon)
+			Polygon* navMeshPolygon, float formationWidth = 0)
 		{
 			//Container
 			std::vector<Portal> vPortals = {};
@@ -54,6 +54,13 @@ namespace Elite
 					portalLine = Line(pLine->p2, pLine->p1);
 				else //Right
 					portalLine = Line(pLine->p1, pLine->p2);
+
+				//Offset for formations
+				Elite::Vector2 direction{ portalLine.p2 - portalLine.p1 };
+				direction.Normalize();
+
+				portalLine.p1 += direction * formationWidth;
+				portalLine.p2 -= direction * formationWidth;
 
 				//Store portal
 				vPortals.push_back(Portal(portalLine));

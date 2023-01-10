@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "UnitAgent.h"
+#include "Group.h"
 
-void UnitAgent::SetFormationOffset(Elite::Vector2& offset)
+void UnitAgent::SetGroup(Group* pGroup)
 {
-	m_FormationOffset = offset;
+	m_pGroup = pGroup;
 }
-

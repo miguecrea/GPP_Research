@@ -161,3 +161,5 @@ struct Goal
 		return !(PositionSet && goal.PositionSet);
 	}
 };
+
+enum class Formation { Line, Circle, Square };

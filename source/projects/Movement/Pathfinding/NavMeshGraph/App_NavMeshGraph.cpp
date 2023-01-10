@@ -16,6 +16,11 @@ using namespace Elite;
 
 //Statics
 bool App_NavMeshGraph::sShowPolygon = true;
+bool App_NavMeshGraph::sFormAfterArrival = false;
+bool App_NavMeshGraph::sIsLine = true;
+bool App_NavMeshGraph::sIsCircle = false;
+bool App_NavMeshGraph::sRecalculateFormation = false;
+Formation App_NavMeshGraph::sCurrentFormation = Formation::Line;
 
 //Destructor
 App_NavMeshGraph::~App_NavMeshGraph()
@@ -58,9 +63,6 @@ void App_NavMeshGraph::Start()
 	m_pGroup = new Group(30);
 
 	//----------- AGENT ------------
-	//m_pArriveBehavior->SetSlowRadius(3.0f);
-	//m_pArriveBehavior->SetTargetRadius(1.0f);
-
 	m_pAgents.reserve(m_NrAgents);
 
 	for (int index{}; index < m_NrAgents; ++index)
@@ -100,8 +102,8 @@ void App_NavMeshGraph::Update(float deltaTime)
 		if (INPUTMANAGER->IsMouseMoving())
 		{
 			auto mouseData = INPUTMANAGER->GetMouseData(Elite::eMouseMotion);
-			m_EndRightSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));	
-
+			m_EndRightSelectionPos = DEBUGRENDERER2D->GetActiveCamera()->ConvertScreenToWorld(Elite::Vector2((float)mouseData.X, (float)mouseData.Y));
+			
 			m_DifferenceRight = m_EndRightSelectionPos - m_StartRightSelectionPos;
 		}
 
@@ -112,13 +114,16 @@ void App_NavMeshGraph::Update(float deltaTime)
 	}
 
 	//Update target/path based on input
-	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eRight))
+	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eRight) || sRecalculateFormation)
 	{
 		m_IsSelectingRight = false;
+		sRecalculateFormation = false;
 
+		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight, sCurrentFormation, sFormAfterArrival);
 		m_pGroup->CalculatePath(m_StartRightSelectionPos, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
-		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight);
-	}												
+	}			
+
+
 
 	//////////////////////////////////////////
 	//  Left mouse button
@@ -136,6 +141,8 @@ void App_NavMeshGraph::Update(float deltaTime)
 		m_LeftSelectionPoints[1] = m_StartLeftSelectionPos;
 		m_LeftSelectionPoints[2] = m_StartLeftSelectionPos;
 		m_LeftSelectionPoints[3] = m_StartLeftSelectionPos;
+
+		m_EndLeftSelectionPos = m_StartLeftSelectionPos;
 	}
 
 	//Update Selection
@@ -193,6 +200,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 	m_pGroup->Update(deltaTime);
 
 	UpdateImGui();
+
 }
 
 void App_NavMeshGraph::Render(float deltaTime) const
@@ -267,11 +275,23 @@ void App_NavMeshGraph::UpdateImGui()
 		ImGui::Spacing();
 
 		ImGui::Text("FORMATIONS");
-		//ImGui::RadioButton("Line - Press L", m_CurrentFormation == Formation::Line);
-		//ImGui::RadioButton("Circle - Press C", m_CurrentFormation == Formation::Circle);
+		if (ImGui::Checkbox("Line  ",&sIsLine))
+		{
+			sCurrentFormation = Formation::Line;
+			sIsCircle = false;
+			sRecalculateFormation = true;
+		}
+		if (ImGui::Checkbox("Circle", &sIsCircle))
+		{
+			sCurrentFormation = Formation::Circle;
+			sIsLine = false;
+			sRecalculateFormation = true;
+		}
 		ImGui::Spacing();
-		ImGui::Spacing();
-
+		if (ImGui::Checkbox("Loose Movement", &sFormAfterArrival))
+		{
+			sRecalculateFormation = true;
+		}
 		//End
 		ImGui::PopAllowKeyboardFocus();
 		ImGui::End();

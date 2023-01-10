@@ -9,6 +9,7 @@
 //-----------------------------------------------------------------
 #include "../SteeringBehaviors/SteeringAgent.h"
 
+class Group;
 class ISteeringBehavior;
 
 class UnitAgent final : public SteeringAgent
@@ -20,13 +21,13 @@ public:
 	virtual ~UnitAgent() = default;
 
 	//--- Unit Functions ---
-	void SetFormationOffset(Elite::Vector2& offset);
-
 	void SetNeighborhoodRadius(float radius) { m_NeighborhoodRadius = radius; };
-	float GetNeighborhoodRadius() { return m_NeighborhoodRadius; };
+	float GetNeighborhoodRadius() const  { return m_NeighborhoodRadius; };
+	void SetGroup(Group* pGroup);
+	Group* GetGroup() const { return m_pGroup; };
 protected:
 	//--- Datamembers ---
-	Elite::Vector2 m_FormationOffset{};
 	float m_NeighborhoodRadius{ 10.f };
+	Group* m_pGroup;
 };
 #endif
