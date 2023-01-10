@@ -34,7 +34,7 @@
     <ClCompile Include="framework\EliteAI\EliteDecisionMaking\EliteBehaviorTree\EBehaviorTree.cpp" />
     <ClCompile Include="projects\Movement\FormationMovement\UnitAgent.cpp" />
     <ClCompile Include="projects\Movement\FormationMovement\Group.cpp" />
-    <ClCompile Include="projects\Movement\FormationMovement\SubGroup.cpp" />
+    <ClCompile Include="projects\Movement\FormationMovement\Formation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="projects\App_Selector.h" />
@@ -117,7 +117,7 @@
     <ClInclude Include="framework\EliteAI\EliteGraphs\EInfluenceMap.h" />
     <ClInclude Include="projects\Movement\FormationMovement\UnitAgent.h" />
     <ClInclude Include="projects\Movement\FormationMovement\Group.h" />
-    <ClInclude Include="projects\Movement\FormationMovement\SubGroup.h" />
+    <ClInclude Include="projects\Movement\FormationMovement\Formation.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

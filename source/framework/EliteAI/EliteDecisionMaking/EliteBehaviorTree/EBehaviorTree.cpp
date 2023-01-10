@@ -101,6 +101,7 @@ BehaviorState BehaviorConditional::Execute(Blackboard* pBlackBoard)
 		return m_CurrentState;
 	}
 
+	return m_CurrentState;
 }
 //-----------------------------------------------------------------
 // BEHAVIOR TREE ACTION (IBehavior)

@@ -12,7 +12,7 @@ using namespace Elite;
 #include "projects/Movement/SteeringBehaviors/Flocking/FlockingSteeringBehaviors.h"
 
 #include "framework\EliteAI\EliteNavigation\Algorithms\ENavGraphPathfinding.h"
-#include "projects/Movement/FormationMovement/Group.h"
+#include "projects/Movement/FormationMovement/Formation.h"
 
 //Statics
 bool App_NavMeshGraph::sShowPolygon = true;
@@ -20,7 +20,7 @@ bool App_NavMeshGraph::sFormAfterArrival = false;
 bool App_NavMeshGraph::sIsLine = true;
 bool App_NavMeshGraph::sIsCircle = false;
 bool App_NavMeshGraph::sRecalculateFormation = false;
-Formation App_NavMeshGraph::sCurrentFormation = Formation::Line;
+FormationType App_NavMeshGraph::sCurrentFormation = FormationType::Line;
 
 //Destructor
 App_NavMeshGraph::~App_NavMeshGraph()
@@ -36,7 +36,7 @@ App_NavMeshGraph::~App_NavMeshGraph()
 		SAFE_DELETE(pAgent);
 	}
 
-	SAFE_DELETE(m_pGroup);
+	SAFE_DELETE(m_pFormation);
 }
 
 //Functions
@@ -60,7 +60,7 @@ void App_NavMeshGraph::Start()
 	m_pNavGraph = new Elite::NavGraph(Elite::Polygon(baseBox), m_AgentRadius);
 
 	//----------- GROUP ------------
-	m_pGroup = new Group(30);
+	m_pFormation = new Formation(30);
 
 	//----------- AGENT ------------
 	m_pAgents.reserve(m_NrAgents);
@@ -119,8 +119,8 @@ void App_NavMeshGraph::Update(float deltaTime)
 		m_IsSelectingRight = false;
 		sRecalculateFormation = false;
 
-		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight, sCurrentFormation, sFormAfterArrival,m_NrLines);
-		m_pGroup->CalculatePath(m_StartRightSelectionPos, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
+		m_pFormation->SetFormation(m_StartRightSelectionPos, m_DifferenceRight, sCurrentFormation, sFormAfterArrival,m_NrLines);
+		m_pFormation->CalculatePath(m_StartRightSelectionPos, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
 	}			
 
 
@@ -184,11 +184,11 @@ void App_NavMeshGraph::Update(float deltaTime)
 				position.x < max.x &&
 				position.y < max.y)
 			{
-				m_pGroup->AddUnitToGroup(pAgent);
+				m_pFormation->AddUnitToFormation(pAgent);
 			}
 			else
 			{
-				m_pGroup->RemoveUnitFromGroup(pAgent);
+				m_pFormation->RemoveUnitFromFormation(pAgent);
 			}
 		}
 	}
@@ -197,7 +197,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 	//  Rest
 	/////////////////////////////////////////
 
-	m_pGroup->Update(deltaTime);
+	m_pFormation->Update(deltaTime);
 
 	UpdateImGui();
 
@@ -277,13 +277,13 @@ void App_NavMeshGraph::UpdateImGui()
 		ImGui::Text("FORMATIONS");
 		if (ImGui::Checkbox("Line  ",&sIsLine))
 		{
-			sCurrentFormation = Formation::Line;
+			sCurrentFormation = FormationType::Line;
 			sIsCircle = false;
 			sRecalculateFormation = true;
 		}
 		if (ImGui::Checkbox("Circle", &sIsCircle))
 		{
-			sCurrentFormation = Formation::Circle;
+			sCurrentFormation = FormationType::Circle;
 			sIsLine = false;
 			sRecalculateFormation = true;
 		}
@@ -292,7 +292,7 @@ void App_NavMeshGraph::UpdateImGui()
 		{
 			sRecalculateFormation = true;
 		}
-		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 2))
+		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 6))
 		{
 			sRecalculateFormation = true;
 		}

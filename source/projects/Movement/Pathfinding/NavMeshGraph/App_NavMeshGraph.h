@@ -11,9 +11,7 @@
 
 class NavigationColliderElement;
 class UnitAgent;
-class Seek;
-class Arrive;
-class Group;
+class Formation;
 
 namespace Elite
 {
@@ -37,8 +35,8 @@ public:
 private:
 	//Datamembers
 	
-	// --Groups--
-	Group* m_pGroup = nullptr;
+	// --Formations--
+	Formation* m_pFormation = nullptr;
 	
 	// --Agents--
 	std::vector<UnitAgent*> m_pAgents{};
@@ -80,7 +78,7 @@ private:
 	static bool sIsLine;
 	static bool sIsCircle;
 	static bool sRecalculateFormation;
-	static Formation sCurrentFormation;
+	static FormationType sCurrentFormation;
 
 	void UpdateImGui();
 private:
