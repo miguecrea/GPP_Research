@@ -27,6 +27,7 @@ private:
 	void UpdateGroupMovements(float deltaT, const Elite::Vector2& targetPos);
 	void RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward);
 	void SortAgentsBasedOnForwardness();
+	void SortAgentsBasedOnDistance();
 
 	Elite::Vector2 CalculateCenterPos() const;
 

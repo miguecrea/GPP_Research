@@ -71,9 +71,8 @@ void Group::Update(float deltaT, const Elite::Vector2& targetPos)
 		Elite::Vector2 A{ targetPos - m_DesiredRightVector };
 		Elite::Vector2 B{ targetPos + m_DesiredRightVector };
 
-		DEBUGRENDERER2D->DrawSegment(averageGroupPos, averageGroupPos + forward * 2.f, Color{ 1.f,0.f,0.f }, -1);
-		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, -1);
-		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, -1);
+		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, 0);
+		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, 0);
 
 		if (m_IsLooseMovement)
 		{
@@ -120,19 +119,8 @@ void Group::Update(float deltaT, const Elite::Vector2& targetPos)
 		}
 		else
 		{
-			int m_NrLines{ 1 };
-			int allowedNrAgentsInFormation{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrLines)) };
-			int adderPerLine{ allowedNrAgentsInFormation };
-			int nrAgentsInFormation{};
-	
-			//Support for: max 2 lines + equal number of agents in each line
-			int currentNrLines{ 1 };
-			float lineOffset{ 2.f * m_UnitSpace };
-	
-			Elite::Vector2 startOffset{ static_cast<float>(m_NrLines / 2) * forward * lineOffset / 2.f };
-			A += startOffset;
-			Elite::Vector2 currentA{ GetCenterPos() - m_DesiredRightVector + startOffset };
-			Elite::Vector2 currentB{ GetCenterPos() + m_DesiredRightVector + startOffset };
+			Elite::Vector2 currentA{ GetCenterPos() - m_DesiredRightVector };
+			Elite::Vector2 currentB{ GetCenterPos() + m_DesiredRightVector };
 			Elite::Vector2 AB{ currentB - currentA };
 	
 			for (UnitAgent* pAgent : m_pAgents)
@@ -156,17 +144,6 @@ void Group::Update(float deltaT, const Elite::Vector2& targetPos)
 				pAgent->SetSteeringBehavior(m_pBlendedLineSteering);
 	
 				pAgent->Update(deltaT);
-	
-				++nrAgentsInFormation;
-	
-				if (nrAgentsInFormation == allowedNrAgentsInFormation)
-				{
-					A -= forward * lineOffset;
-					currentA -= forward * lineOffset;
-					currentB -= forward * lineOffset;
-	
-					allowedNrAgentsInFormation += adderPerLine;
-				}
 			}
 		}
 	}
@@ -177,10 +154,7 @@ void Group::Update(float deltaT, const Elite::Vector2& targetPos)
 		const float averageDistanceSquared{ (targetPos - averageGroupPos).MagnitudeSquared() };
 
 		DEBUGRENDERER2D->DrawPoint(targetPos, 5.f, Color{ 1.f,1.f,0.f }, -0.9f);
-		DEBUGRENDERER2D->DrawCircle(targetPos, radius, Color{ 1.f,1.f,0.f }, -0.9f);
-
-		DEBUGRENDERER2D->DrawPoint(m_DesiredCenter, 5.f, Color{ 1.f,0.f,0.f }, -1.f);
-		DEBUGRENDERER2D->DrawCircle(m_DesiredCenter, radius, Color{ 1.f,0.f,0.f }, -1.f);
+		//DEBUGRENDERER2D->DrawCircle(targetPos, radius, Color{ 1.f,1.f,0.f }, -0.9f);
 
 		for (UnitAgent* pAgent : m_pAgents)
 		{

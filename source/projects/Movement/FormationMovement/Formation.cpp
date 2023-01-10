@@ -112,41 +112,30 @@ void Formation::UpdateGroupMovements(float deltaT, const Elite::Vector2& targetP
 	Elite::Vector2 right{ m_DesiredFormationRightVector.GetNormalized() };
 	Elite::Vector2 forward{ -right.y,right.x };
 
-	RegisterOffsetFromCenter(m_CurrentCenter, forward);
-
-	//Choose a sorting
-	SortAgentsBasedOnForwardness();
-
-	int nrUnitsPerGroup{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrGroups))};
-	int startIndex{};
-	int totalIndex{};
-
-	//Place in sub formations
-	for (Group* pGroup : m_pGroups)
-	{
-		for (size_t index{}; index < m_pAgents.size(); ++index)
-		{
-			pGroup->RemoveUnitFromGroup(m_pAgents[index]);
-		}
-
-		for (int index{}; index < nrUnitsPerGroup; ++index)
-		{
-			if (totalIndex == m_pAgents.size()) break;
-
-			pGroup->AddUnitToGroup(m_pAgents[totalIndex]);
-			++totalIndex;
-		}
-	}
-
 	//Update groups
 	int counter{};
 
-	for (Group* pGroup : m_pGroups)
+	switch (m_CurrentFormation)
 	{
-		pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector, m_CurrentFormation, m_IsLooseMovement);
-		pGroup->Update(deltaT, m_DesiredFormationCenter - counter * forward * 10.f);
+	case FormationType::Line:
+		for (Group* pGroup : m_pGroups)
+		{
+			pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector, m_CurrentFormation, m_IsLooseMovement);
+			pGroup->Update(deltaT, m_DesiredFormationCenter - counter * forward * m_UnitSpace * 2.f);
 
-		++counter;
+			++counter;
+		}
+		break;
+	case FormationType::Circle:
+		for (Group* pGroup : m_pGroups)
+		{
+			pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector - ((right * m_DesiredFormationRightVector.Magnitude()) / m_NrGroups) * counter, m_CurrentFormation, m_IsLooseMovement);
+			pGroup->Update(deltaT, m_DesiredFormationCenter);
+
+			++counter;
+		}
+		break;
+
 	}
 }
 
@@ -167,6 +156,16 @@ void Formation::SortAgentsBasedOnForwardness()
 	};
 
 	std::sort(m_pAgents.begin(), m_pAgents.end(), isMoreForward);
+}
+
+void Formation::SortAgentsBasedOnDistance()
+{
+	auto isNearer = [&](UnitAgent* first, UnitAgent* second)->float
+	{
+		return first->GetOffset().MagnitudeSquared() > second->GetOffset().MagnitudeSquared();
+	};
+
+	std::sort(m_pAgents.begin(), m_pAgents.end(), isNearer);
 }
 
 Elite::Vector2 Formation::CalculateCenterPos() const
@@ -198,8 +197,7 @@ void Formation::SetFormation(const Elite::Vector2& desiredCenter, const Elite::V
 	m_CurrentFormation = formation;
 	m_IsLooseMovement = isLooseMovement;
 
-	//Clamp between 1 and 6 lines
-	nrGroups = (std::min)(3, nrGroups);
+	//Minimum number is 1
 	m_NrGroups = std::max(1, nrGroups);
 
 	for (Group* pGroup : m_pGroups)
@@ -213,5 +211,42 @@ void Formation::SetFormation(const Elite::Vector2& desiredCenter, const Elite::V
 	for (int index{}; index < nrGroups; ++index)
 	{
 		m_pGroups.push_back(new Group(m_MaxGroupSize));
+	}
+
+	Elite::Vector2 right{ m_DesiredFormationRightVector.GetNormalized() };
+	Elite::Vector2 forward{ -right.y,right.x };
+
+	RegisterOffsetFromCenter(m_CurrentCenter, forward);
+
+	//Choose a sorting
+	int nrUnitsPerGroup{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrGroups)) };
+	int startIndex{};
+	int totalIndex{};
+
+	switch (formation)
+	{
+	case FormationType::Line:
+		SortAgentsBasedOnForwardness();
+		break;
+	case FormationType::Circle:
+		SortAgentsBasedOnDistance();
+		break;
+	}
+
+	//Place in sub formations
+	for (Group* pGroup : m_pGroups)
+	{
+		for (size_t index{}; index < m_pAgents.size(); ++index)
+		{
+			pGroup->RemoveUnitFromGroup(m_pAgents[index]);
+		}
+
+		for (int index{}; index < nrUnitsPerGroup; ++index)
+		{
+			if (totalIndex == m_pAgents.size()) break;
+
+			pGroup->AddUnitToGroup(m_pAgents[totalIndex]);
+			++totalIndex;
+		}
 	}
 }

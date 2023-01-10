@@ -40,7 +40,7 @@ private:
 	
 	// --Agents--
 	std::vector<UnitAgent*> m_pAgents{};
-	const int m_NrAgents{ 20 };
+	const int m_NrAgents{ 30 };
 
 	TargetData m_Target = {};
 	float m_AgentRadius = 1.0f;

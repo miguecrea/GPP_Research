@@ -171,7 +171,8 @@ void App_NavMeshGraph::Update(float deltaTime)
 	if (INPUTMANAGER->IsMouseButtonUp(InputMouseButton::eLeft))
 	{
 		m_IsSelectingLeft = false;
-
+		sRecalculateFormation = true;
+		
 		const Vector2 max{ std::max(m_StartLeftSelectionPos.x,m_EndLeftSelectionPos.x),std::max(m_StartLeftSelectionPos.y,m_EndLeftSelectionPos.y) };
 		const Vector2 min{ (std::min)(m_StartLeftSelectionPos.x,m_EndLeftSelectionPos.x),(std::min)(m_StartLeftSelectionPos.y,m_EndLeftSelectionPos.y) };
 
@@ -292,7 +293,7 @@ void App_NavMeshGraph::UpdateImGui()
 		{
 			sRecalculateFormation = true;
 		}
-		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 6))
+		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 3))
 		{
 			sRecalculateFormation = true;
 		}
