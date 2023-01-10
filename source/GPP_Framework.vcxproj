@@ -220,6 +220,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release_Exam|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="projects\Movement\FormationMovement\SubGroup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework\EliteAI\EliteData\EBlackboard.h" />
@@ -302,6 +303,7 @@
     <ClInclude Include="projects\Shared\BaseAgent.h" />
     <ClInclude Include="projects\Shared\NavigationColliderElement.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="projects\Movement\FormationMovement\SubGroup.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />

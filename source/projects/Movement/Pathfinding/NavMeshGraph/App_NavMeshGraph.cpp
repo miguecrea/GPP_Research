@@ -119,7 +119,7 @@ void App_NavMeshGraph::Update(float deltaTime)
 		m_IsSelectingRight = false;
 		sRecalculateFormation = false;
 
-		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight, sCurrentFormation, sFormAfterArrival);
+		m_pGroup->SetFormation(m_StartRightSelectionPos, m_DifferenceRight, sCurrentFormation, sFormAfterArrival,m_NrLines);
 		m_pGroup->CalculatePath(m_StartRightSelectionPos, m_pNavGraph, m_DebugNodePositions, m_Portals, m_VisitedNodePositions);
 	}			
 
@@ -262,7 +262,7 @@ void App_NavMeshGraph::UpdateImGui()
 		ImGui::Spacing();
 		ImGui::Spacing();
 
-		if (ImGui::SliderFloat("AgentSpeed", &m_AgentSpeed, 0.0f, 22.0f))
+		if (ImGui::SliderFloat("AgentSpeed", &m_AgentSpeed, 0.0f, 30.0f))
 		{
 			for (UnitAgent* pAgent : m_pAgents)
 			{
@@ -292,6 +292,11 @@ void App_NavMeshGraph::UpdateImGui()
 		{
 			sRecalculateFormation = true;
 		}
+		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 2))
+		{
+			sRecalculateFormation = true;
+		}
+
 		//End
 		ImGui::PopAllowKeyboardFocus();
 		ImGui::End();

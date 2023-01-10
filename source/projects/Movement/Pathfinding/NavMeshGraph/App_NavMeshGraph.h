@@ -48,6 +48,8 @@ private:
 	float m_AgentRadius = 1.0f;
 	float m_AgentSpeed = 16.0f;
 
+	int m_NrLines{1};
+
 	// --Level--
 	std::vector<NavigationColliderElement*> m_vNavigationColliders = {};
 

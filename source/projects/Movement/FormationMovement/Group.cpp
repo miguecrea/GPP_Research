@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Group.h"
+#include "projects//Movement/FormationMovement/SubGroup.h"
 
 #include "UnitAgent.h"
 #include "../SteeringBehaviors/Steering/SteeringBehaviors.h"
@@ -31,7 +32,7 @@ Group::Group(
 	m_pVelMatchBehavior = new VelocityMatch(this);
 	m_pPrioritySteering = new PrioritySteering({ m_pSeparationBehavior,m_pArriveBehavior });
 
-
+	m_pSubGroups.resize(2);
 
 	//Circle
 	m_pBlendedCircleFormAtLocationSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f} });
@@ -61,6 +62,12 @@ Group::~Group()
 	SAFE_DELETE(m_pBlendedCircleFormAtLocationSteering);
 
 	m_pAgents.clear();
+
+	for (SubGroup* pSubGroup : m_pSubGroups)
+	{
+		SAFE_DELETE(pSubGroup);
+		pSubGroup = nullptr;
+	}
 }
 
 void Group::Update(float deltaT)
@@ -148,7 +155,7 @@ std::vector<Elite::Vector2> Group::GetPath() const
 
 void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vector<Vector2>& debugNodePositions,std::vector<Portal>& debugPortals,std::vector<Vector2>& visitedNodePositions)
 {
-	const float formationOffset{ m_FormationDifference.Magnitude() + 0.5f};
+	const float formationOffset{ m_FormationRightVector.Magnitude() + 0.5f};
 	Elite::Vector2 currentCenter{ GetCenterPos() };
 
 	//Not working 100% correctly -> crop the portals
@@ -160,7 +167,6 @@ void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vec
 	{
 		Elite::Vector2 direction{};
 		Elite::Vector2 rotatedDirection{};
-
 		Elite::Vector2 previousDirection{ m_Path[0] - currentCenter };
 		previousDirection.Normalize();
 
@@ -174,9 +180,9 @@ void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vec
 			rotatedDirection.y = previousDirection.x;
 
 			//Left or right
-			float cross{ Cross(direction, previousDirection) };
+			float crossPrevious{ Cross(direction, previousDirection) };
 
-			m_Path[index] += (cross > 0.f ? 1.f : -1.f) * rotatedDirection * formationOffset;
+			m_Path[index] += (crossPrevious > 0.f ? 1.f : -1.f) * rotatedDirection * formationOffset;
 
 			previousDirection = direction;
 		}
@@ -185,15 +191,61 @@ void Group::CalculatePath(const Vector2& destiation,NavGraph* pNavGraph,std::vec
 
 void Group::CalculateFormationMovement(float deltaT, const Elite::Vector2& targetPos)
 {
+	if (m_IsGroupBased)
+	{
+		CalculateGroupBasedMovement(deltaT, targetPos);
+	}
+	else
+	{
+		CalculateSubGroupBasedMovement(deltaT, targetPos);
+	}
+}
+
+void Group::CalculateSubGroupBasedMovement(float deltaT, const Elite::Vector2& targetPos)
+{
 	Elite::Vector2 averageGroupPos{ GetCenterPos() };
+	Elite::Vector2 right{ m_FormationRightVector.GetNormalized() };
+	Elite::Vector2 forward{ -right.y,right.x };
+	
+	RegisterOffsetFromCenter(averageGroupPos, forward);
+	SortAgentsBasedOnForwardness();
+
+	int allowedNrAgentsInFormation{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrLines)) };
+	int nrAgentsInFormation{};
+
+	//Place in sub formations
+	for (SubGroup* pSubGroup : m_pSubGroups)
+	{
+		for (int index{}; index < allowedNrAgentsInFormation; ++index)
+		{
+			pSubGroup->RemoveUnitFromGroup(m_pAgents[index]);
+		}
+
+		for (int index{}; index < allowedNrAgentsInFormation; ++index)
+		{
+			pSubGroup->AddUnitToGroup(m_pAgents[allowedNrAgentsInFormation + index]);
+		}
+	}
+}
+
+
+void Group::CalculateGroupBasedMovement(float deltaT, const Elite::Vector2& targetPos)
+{
+	Elite::Vector2 averageGroupPos{ GetCenterPos() };
+	Elite::Vector2 right{ m_FormationRightVector.GetNormalized() };
+	Elite::Vector2 forward{ -right.y,right.x };
+
+	RegisterOffsetFromCenter(averageGroupPos, forward);
+	SortAgentsBasedOnForwardness();
 
 	switch (m_CurrentFormation)
 	{
 	case Formation::Line:
 	{
-		Elite::Vector2 A{ targetPos - m_FormationDifference };
-		Elite::Vector2 B{ targetPos + m_FormationDifference };
+		Elite::Vector2 A{ targetPos - m_FormationRightVector };
+		Elite::Vector2 B{ targetPos + m_FormationRightVector };
 
+		DEBUGRENDERER2D->DrawSegment(averageGroupPos, averageGroupPos + forward * 2.f, Color{ 1.f,0.f,0.f }, -1);
 		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, -1);
 		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, -1);
 
@@ -242,8 +294,18 @@ void Group::CalculateFormationMovement(float deltaT, const Elite::Vector2& targe
 		}
 		else
 		{
-			Elite::Vector2 currentA{ GetCenterPos() - m_FormationDifference };
-			Elite::Vector2 currentB{ GetCenterPos() + m_FormationDifference };
+			int allowedNrAgentsInFormation{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrLines)) };
+			int adderPerLine{ allowedNrAgentsInFormation };
+			int nrAgentsInFormation{};
+
+			//Support for: max 2 lines + equal number of agents in each line
+			int currentNrLines{ 1 };
+			float lineOffset{ 2.f * m_UnitSpace };
+
+			Elite::Vector2 startOffset{ static_cast<float>(m_NrLines / 2) * forward * lineOffset / 2.f };
+			A += startOffset;
+			Elite::Vector2 currentA{ GetCenterPos() - m_FormationRightVector + startOffset };
+			Elite::Vector2 currentB{ GetCenterPos() + m_FormationRightVector + startOffset};
 			Elite::Vector2 AB{ currentB - currentA };
 
 			for (UnitAgent* pAgent : m_pAgents)
@@ -267,13 +329,24 @@ void Group::CalculateFormationMovement(float deltaT, const Elite::Vector2& targe
 				pAgent->SetSteeringBehavior(m_pBlendedLineSteering);
 
 				pAgent->Update(deltaT);
+
+				++nrAgentsInFormation;
+
+				if (nrAgentsInFormation == allowedNrAgentsInFormation)
+				{
+					A -= forward * lineOffset;
+					currentA -= forward * lineOffset;
+					currentB -= forward * lineOffset;
+
+					allowedNrAgentsInFormation += adderPerLine;
+				}
 			}
 		}
 	}
 	break;
 	case Formation::Circle:
 	{
-		const float radius{ m_FormationDifference.Magnitude() };
+		const float radius{ m_FormationRightVector.Magnitude() };
 		const float averageDistanceSquared{ (targetPos - averageGroupPos).MagnitudeSquared() };
 
 		DEBUGRENDERER2D->DrawPoint(targetPos, 5.f, Color{ 1.f,1.f,0.f }, -0.9f);
@@ -352,12 +425,48 @@ Elite::Vector2 Group::GetAverageNeighborVelocity() const
 	return averageVelocity / static_cast<float>(m_NrOfNeighbors);
 }
 
-void Group::SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation, bool formAfterArrival)
+void Group::RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward)
+{
+	for (UnitAgent* pAgent : m_pAgents)
+	{
+		pAgent->SetOffset(pAgent->GetPosition() - centerPos);
+		pAgent->CalculateForwardness(forward);
+	}
+}
+
+void Group::SortAgentsBasedOnForwardness()
+{
+	auto isMoreForward = [&](UnitAgent* first, UnitAgent* second)->float
+	{
+		return first->GetForwardness() > second->GetForwardness();
+	};
+
+	std::sort(m_pAgents.begin(), m_pAgents.end(), isMoreForward);
+}
+
+void Group::SetFormation(const Elite::Vector2& center, const Elite::Vector2& difference, Formation formation, bool formAfterArrival, int nrLines)
 {
 	m_DesiredFormationCenter = center;
-	m_FormationDifference = difference;
+	m_FormationRightVector = difference;
 	m_CurrentFormation = formation;
 	m_FormAfterArrival = formAfterArrival;
+
+	//Clamp between 1 and 6 lines
+	nrLines = (std::min)(6, nrLines);
+	m_NrLines = std::max(1, nrLines);
+
+	for (SubGroup* pSubGroup : m_pSubGroups)
+	{
+		SAFE_DELETE(pSubGroup);
+		pSubGroup = nullptr;
+	}
+
+	m_pSubGroups.resize(m_NrLines);
+	
+	for(SubGroup* pSubGroup : m_pSubGroups)
+	{
+		pSubGroup = new SubGroup()
+	}
 }
 
 
