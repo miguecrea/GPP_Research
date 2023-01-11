@@ -23,17 +23,24 @@ public:
 	//--- Unit Functions ---
 	void SetNeighborhoodRadius(float radius) { m_NeighborhoodRadius = radius; };
 	float GetNeighborhoodRadius() const  { return m_NeighborhoodRadius; };
-	Elite::Vector2 GetOffset() const { return m_OffsetFromCenter; };
-	float GetForwardness() const { return m_Forwardness; };
+
 	void SetGroup(Group* pGroup);
-	void SetOffset(const Elite::Vector2 offset) { m_OffsetFromCenter = offset; };
-	void CalculateForwardness(const Elite::Vector2 forward) { m_Forwardness = Dot(forward, m_OffsetFromCenter); };
 	Group* GetGroup() const { return m_pGroup; };
+
+	void SetOffset(const Elite::Vector2& offset) { m_OffsetFromCenter = offset; };
+	Elite::Vector2 GetOffset() const { return m_OffsetFromCenter; };
+
+	void CalculateForwardness(const Elite::Vector2& forward) { m_Forwardness = Dot(forward, m_OffsetFromCenter); };
+	float GetForwardness() const { return m_Forwardness; };
+
+	void CalculateRightness(const Elite::Vector2& right) { m_Rightness = Dot(right, m_OffsetFromCenter); };
+	float GetRightness() const { return m_Rightness; };
 protected:
 	//--- Datamembers ---
 	Elite::Vector2 m_OffsetFromCenter{};
 	float m_Forwardness{};
+	float m_Rightness{};
 	float m_NeighborhoodRadius{ 10.f };
-	Group* m_pGroup;
+	Group* m_pGroup{};
 };
 #endif

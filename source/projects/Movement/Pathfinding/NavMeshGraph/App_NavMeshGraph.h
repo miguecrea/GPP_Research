@@ -77,6 +77,7 @@ private:
 	static bool sFormAfterArrival;
 	static bool sIsLine;
 	static bool sIsCircle;
+	static bool sIsArrow;
 	static bool sRecalculateFormation;
 	static FormationType sCurrentFormation;
 

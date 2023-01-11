@@ -25,10 +25,13 @@ public:
 	std::vector<Elite::Vector2> GetPath() const;
 private:
 	void UpdateGroupMovements(float deltaT, const Elite::Vector2& targetPos);
-	void RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward);
+	void RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward, const Elite::Vector2& right);
 	void SortAgentsBasedOnForwardness();
-	void SortAgentsBasedOnDistance();
-
+	void SortAgentsBasedOnRightness();
+	void SortAgentsBasedOnDistanceDecreasing();
+	void SortAgentsBasedOnDistanceIncreasing();
+	void SetBasicFormation();
+	void SetCustomFormation();
 	Elite::Vector2 CalculateCenterPos() const;
 
 	// --Pathfinder--
@@ -41,8 +44,9 @@ private:
 	const Elite::Color m_LightBlue{ 0.5f,0.5f,1.f };
 
 	// --Groups--
-	std::vector<Group*> m_pGroups;
+	std::vector<Group*> m_pGroups{};
 	int m_NrGroups{ 1 };
+	Group* m_pCommandingGroup{};
 	
 	// --Formation--
 	Elite::Vector2 m_CurrentCenter{};

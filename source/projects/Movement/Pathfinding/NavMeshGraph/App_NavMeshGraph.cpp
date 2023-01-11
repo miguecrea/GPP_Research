@@ -19,6 +19,7 @@ bool App_NavMeshGraph::sShowPolygon = true;
 bool App_NavMeshGraph::sFormAfterArrival = false;
 bool App_NavMeshGraph::sIsLine = true;
 bool App_NavMeshGraph::sIsCircle = false;
+bool App_NavMeshGraph::sIsArrow = false;
 bool App_NavMeshGraph::sRecalculateFormation = false;
 FormationType App_NavMeshGraph::sCurrentFormation = FormationType::Line;
 
@@ -218,6 +219,8 @@ void App_NavMeshGraph::Render(float deltaTime) const
 		DEBUGRENDERER2D->DrawSolidPolygon(m_pNavGraph->GetNavMeshPolygon(),
 			Color(0.0f, 0.5f, 0.1f, 0.05f), 0.4f);
 	}
+
+	m_pFormation->Render(deltaTime);
 }
 
 void App_NavMeshGraph::UpdateImGui()
@@ -279,13 +282,16 @@ void App_NavMeshGraph::UpdateImGui()
 		if (ImGui::Checkbox("Line  ",&sIsLine))
 		{
 			sCurrentFormation = FormationType::Line;
-			sIsCircle = false;
 			sRecalculateFormation = true;
 		}
 		if (ImGui::Checkbox("Circle", &sIsCircle))
 		{
 			sCurrentFormation = FormationType::Circle;
-			sIsLine = false;
+			sRecalculateFormation = true;
+		}
+		if (ImGui::Checkbox("Arrow", &sIsArrow))
+		{
+			sCurrentFormation = FormationType::Arrow;
 			sRecalculateFormation = true;
 		}
 		ImGui::Spacing();
@@ -296,6 +302,26 @@ void App_NavMeshGraph::UpdateImGui()
 		if (ImGui::SliderInt("Nr Lines", &m_NrLines, 1, 3))
 		{
 			sRecalculateFormation = true;
+		}
+
+		switch (sCurrentFormation)
+		{
+			case FormationType::Line:
+				sIsLine = true;
+				sIsCircle = false;
+				sIsArrow = false;
+				break;
+			case FormationType::Circle:
+				sIsLine = false;
+				sIsCircle = true;
+				sIsArrow = false;
+				break;
+			case FormationType::Arrow:
+				sIsLine = false;
+				sIsCircle = false;
+				sIsArrow = true;
+				m_NrLines = 3;
+				break;
 		}
 
 		//End

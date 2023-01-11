@@ -5,11 +5,11 @@
 #include "../SteeringBehaviors/Steering/SteeringBehaviors.h"
 #include "../SteeringBehaviors/CombinedSteering/CombinedSteeringBehaviors.h"
 #include "../SteeringBehaviors/Flocking/FlockingSteeringBehaviors.h"
-
+#include "Formation.h"
 using namespace Elite;
 
 //Constructor & Destructor
-Group::Group(int maxGroupSize ) :m_MaxGroupSize{ maxGroupSize }
+Group::Group(std::vector<UnitAgent*>* pOtherAgents, int maxGroupSize) :m_MaxGroupSize{ maxGroupSize }, m_pOtherAgents{pOtherAgents}
 {
 	m_pAgents.reserve(m_MaxGroupSize);
 	m_pNeighbors.resize(m_MaxGroupSize);
@@ -35,7 +35,7 @@ Group::Group(int maxGroupSize ) :m_MaxGroupSize{ maxGroupSize }
 	m_pBlendedCircleSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, {m_pSeekBehavior,10.f},{m_pSeekDesiredLocationBehavior,10.f}, {m_pVelMatchBehavior,1.f},{m_pFaceBehavior,2.f} });
 	//Line
 	m_pBlendedLineFormAtLocationSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,2.f }, { m_pSeekBBehavior,2.f }, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
-	m_pBlendedLineSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{ m_pSeekABehavior,0.f }, { m_pSeekBBehavior,0.f },{m_pSeekDesiredLocationBehavior,15.f}, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
+	m_pBlendedLineSteering = new BlendedSteering({ { m_pSeparationBehavior,4.f }, { m_pSeekBehavior,10.f },{m_pSeekDesiredLocationBehavior,15.f}, { m_pVelMatchBehavior,1.f },{m_pFaceBehavior,2.f } });
 }
 
 Group::~Group()
@@ -71,8 +71,8 @@ void Group::Update(float deltaT, const Elite::Vector2& targetPos)
 		Elite::Vector2 A{ targetPos - m_DesiredRightVector };
 		Elite::Vector2 B{ targetPos + m_DesiredRightVector };
 
-		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,0.f,0.f }, 0);
-		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,0.f,0.f }, 0);
+		DEBUGRENDERER2D->DrawPoint(A, 5.f, Color{ 1.f,1.f,0.f }, 0);
+		DEBUGRENDERER2D->DrawPoint(B, 5.f, Color{ 1.f,1.f,0.f }, 0);
 
 		if (m_IsLooseMovement)
 		{
@@ -247,7 +247,7 @@ void Group::RegisterNeighbors(UnitAgent* pAgent)
 {
 	m_NrOfNeighbors = 0;
 
-	for (UnitAgent* pOtherAgent : m_pAgents)
+	for (UnitAgent* pOtherAgent : *m_pOtherAgents)
 	{
 		if ((pAgent != pOtherAgent) && (pOtherAgent != nullptr) && (Distance(pAgent->GetPosition(), pOtherAgent->GetPosition()) < pAgent->GetNeighborhoodRadius()))
 		{

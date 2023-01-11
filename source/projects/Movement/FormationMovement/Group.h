@@ -15,12 +15,11 @@ class ISteeringBehavior;
 class UnitAgent;
 class BlendedSteering;
 class PrioritySteering;
-class SubGroup;
 
 class Group
 {
 public:
-	Group(int maxGroupSize = 15);
+	Group(std::vector<UnitAgent*>* pOtherAgents,int maxGroupSize = 15);
 
 	virtual ~Group();
 
@@ -53,10 +52,8 @@ protected:
 	// --Group--
 	int m_MaxGroupSize = 0;
 	std::vector<UnitAgent*> m_pAgents;
-	
-	// --Sub groups--
-	std::vector<SubGroup*> m_pSubGroups;
-	
+	std::vector<UnitAgent*>* m_pOtherAgents;
+
 	//Steering Behaviors
 	std::vector<UnitAgent*> m_pNeighbors;
 	int m_NrOfNeighbors = 0;

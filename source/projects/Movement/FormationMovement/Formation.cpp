@@ -12,6 +12,7 @@ Formation::Formation(
 {
 	m_pAgents.reserve(m_MaxGroupSize);
 	m_NrGroups = 1;
+	m_pCommandingGroup = nullptr;
 }
 
 Formation::~Formation()
@@ -28,12 +29,11 @@ Formation::~Formation()
 void Formation::Update(float deltaT)
 {
 	Elite::Vector2 targetPos{ m_DesiredFormationCenter };
+	m_CurrentCenter = CalculateCenterPos();
 
 	if (m_Path.size() > 0)
 	{
 		targetPos = m_Path[0];
-
-		m_CurrentCenter = CalculateCenterPos();
 
 		if (Elite::DistanceSquared(m_CurrentCenter, m_Path[0]) < m_UnitSpace * m_UnitSpace)
 		{
@@ -45,16 +45,21 @@ void Formation::Update(float deltaT)
 	UpdateGroupMovements(deltaT, targetPos);
 }
 
+void Formation::Render(float deltaT)
+{
+	DEBUGRENDERER2D->DrawPoint(m_CurrentCenter, 5.f, Elite::Color{ 0.f,0.f,1.f }, -0.9f);
+	DEBUGRENDERER2D->DrawPoint(m_DesiredFormationCenter, 5.f, Elite::Color{ 1.f,0.f,0.f }, -0.8f);
+}
+
 void Formation::CalculatePath(const Elite::Vector2& destiation, Elite::NavGraph* pNavGraph, std::vector<Elite::Vector2>& debugNodePositions, std::vector<Elite::Portal>& portals, std::vector<Elite::Vector2>& visitedNodePositions)
 {
 	m_CurrentCenter = CalculateCenterPos();
 
+	//Not working 100% correctly: cropping the portals
 	const float formationOffset{ m_DesiredFormationRightVector.Magnitude() + 0.5f };
+	m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions, formationOffset + m_UnitSpace);
 
-	//Not working 100% correctly -> crop the portals
-	//m_Path = Elite::NavMeshPathfinding::FindPath(currentCenter, destiation, pNavGraph, debugNodePositions, debugPortals, visitedNodePositions, formationOffset + m_UnitSpace);
-
-	m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions);
+	//m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions);
 
 	if (m_Path.size() > 0)
 	{
@@ -121,7 +126,7 @@ void Formation::UpdateGroupMovements(float deltaT, const Elite::Vector2& targetP
 		for (Group* pGroup : m_pGroups)
 		{
 			pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector, m_CurrentFormation, m_IsLooseMovement);
-			pGroup->Update(deltaT, m_DesiredFormationCenter - counter * forward * m_UnitSpace * 2.f);
+			pGroup->Update(deltaT, targetPos - static_cast<float>(counter) * forward * m_UnitSpace * 2.f);
 
 			++counter;
 		}
@@ -129,22 +134,106 @@ void Formation::UpdateGroupMovements(float deltaT, const Elite::Vector2& targetP
 	case FormationType::Circle:
 		for (Group* pGroup : m_pGroups)
 		{
-			pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector - ((right * m_DesiredFormationRightVector.Magnitude()) / m_NrGroups) * counter, m_CurrentFormation, m_IsLooseMovement);
-			pGroup->Update(deltaT, m_DesiredFormationCenter);
+			pGroup->SetFormation(m_DesiredFormationCenter, m_DesiredFormationRightVector - ((right * m_DesiredFormationRightVector.Magnitude()) / static_cast<float>(m_NrGroups)) * static_cast<float>(counter), m_CurrentFormation, m_IsLooseMovement);
+			pGroup->Update(deltaT, targetPos);
 
 			++counter;
 		}
 		break;
+	case FormationType::Arrow:
+	{
+		const Elite::Vector2 top{ forward * m_DesiredFormationRightVector.Magnitude() / 2.f };
+		const Elite::Vector2 rightPoint{ m_DesiredFormationRightVector / 2.f };
 
+		Elite::Vector2 rightSide{ top - rightPoint };
+		Elite::Vector2 leftSide{ top + rightPoint };
+
+		for (Group* pGroup : m_pGroups)
+		{
+			//Commander
+			if (counter == 0)
+			{
+				pGroup->SetFormation(m_DesiredFormationCenter, right * m_UnitSpace, FormationType::Line, m_IsLooseMovement);
+				pGroup->Update(deltaT, targetPos);
+			}
+			//Right
+			else if (counter == 1)
+			{
+				pGroup->SetFormation(m_DesiredFormationCenter, -rightSide, FormationType::Line, m_IsLooseMovement);
+				pGroup->Update(deltaT, targetPos - rightSide + m_UnitSpace * right);
+			}
+			//Left
+			else
+			{
+				pGroup->SetFormation(m_DesiredFormationCenter,  leftSide, FormationType::Line, m_IsLooseMovement);
+				pGroup->Update(deltaT, targetPos - leftSide - m_UnitSpace * right);
+			}
+			++counter;
+		}
+	}
+		break;
 	}
 }
 
-void Formation::RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward)
+void Formation::SetFormation(const Elite::Vector2& desiredCenter, const Elite::Vector2& desiredRightVector, FormationType formation, bool isLooseMovement, int nrGroups)
+{
+	m_DesiredFormationCenter = desiredCenter;
+	m_DesiredFormationRightVector = desiredRightVector;
+	m_CurrentFormation = formation;
+	m_IsLooseMovement = isLooseMovement;
+
+	//Minimum number is 1
+	m_NrGroups = std::max(1, nrGroups);
+
+	//Reset agents
+	for (UnitAgent* pAgent : m_pAgents)
+	{
+		pAgent->SetGroup(nullptr);
+	}
+
+	Elite::Vector2 right{ m_DesiredFormationRightVector.GetNormalized() };
+	Elite::Vector2 forward{ -right.y,right.x };
+
+	RegisterOffsetFromCenter(m_CurrentCenter, forward, right);
+
+	//Reset groups
+	for (Group* pGroup : m_pGroups)
+	{
+		delete pGroup;
+		pGroup = nullptr;
+	}
+
+	m_pGroups.clear();
+	m_pCommandingGroup = nullptr;
+
+	//Create new groups
+	for (int index{}; index < nrGroups; ++index)
+	{
+		m_pGroups.push_back(new Group(&m_pAgents, m_MaxGroupSize));
+	}
+
+	//Set formations
+	if (m_CurrentFormation == FormationType::Line || m_CurrentFormation == FormationType::Circle)
+	{
+		SetBasicFormation();
+	}
+	else if (m_CurrentFormation == FormationType::Arrow)
+	{
+		SetCustomFormation();
+	}
+}
+
+//////////////////////////////////////////////////
+//  Agents
+/////////////////////////////////////////////////
+
+void Formation::RegisterOffsetFromCenter(const Elite::Vector2& centerPos, const Elite::Vector2& forward, const Elite::Vector2& right)
 {
 	for (UnitAgent* pAgent : m_pAgents)
 	{
 		pAgent->SetOffset(pAgent->GetPosition() - centerPos);
 		pAgent->CalculateForwardness(forward);
+		pAgent->CalculateRightness(right);
 	}
 }
 
@@ -158,28 +247,60 @@ void Formation::SortAgentsBasedOnForwardness()
 	std::sort(m_pAgents.begin(), m_pAgents.end(), isMoreForward);
 }
 
-void Formation::SortAgentsBasedOnDistance()
+void Formation::SortAgentsBasedOnRightness()
+{
+	auto isMoreRight = [&](UnitAgent* first, UnitAgent* second)->float
+	{
+		return first->GetRightness() > second->GetRightness();
+	};
+
+	std::sort(m_pAgents.begin(), m_pAgents.end(), isMoreRight);
+}
+
+void Formation::SortAgentsBasedOnDistanceDecreasing()
+{
+	auto isFurther = [&](UnitAgent* first, UnitAgent* second)->float
+	{
+		return first->GetOffset().MagnitudeSquared() > second->GetOffset().MagnitudeSquared();
+	};
+
+	std::sort(m_pAgents.begin(), m_pAgents.end(), isFurther);
+}
+
+void Formation::SortAgentsBasedOnDistanceIncreasing()
 {
 	auto isNearer = [&](UnitAgent* first, UnitAgent* second)->float
 	{
-		return first->GetOffset().MagnitudeSquared() > second->GetOffset().MagnitudeSquared();
+		return first->GetOffset().MagnitudeSquared() < second->GetOffset().MagnitudeSquared();
 	};
 
 	std::sort(m_pAgents.begin(), m_pAgents.end(), isNearer);
 }
 
+////////////////////////////////////////////////////
+//  Other Helper functions
+///////////////////////////////////////////////////
+
 Elite::Vector2 Formation::CalculateCenterPos() const
 {
 	Elite::Vector2 centerPos{};
 
-	if (m_pGroups.size() > 0)
+	//Calculate center of all groups
+	if (m_pCommandingGroup == nullptr)
 	{
-		for (const Group* pGroup : m_pGroups)
+		if (m_pGroups.size() > 0)
 		{
-			centerPos += pGroup->GetCenterPos();
-		}
+			for (const Group* pGroup : m_pGroups)
+			{
+				centerPos += pGroup->GetCenterPos();
+			}
 
-		centerPos /= static_cast<float>(m_pGroups.size());
+			centerPos /= static_cast<float>(m_pGroups.size());
+		}
+	}
+	else
+	{
+		centerPos = m_pCommandingGroup->GetCenterPos();
 	}
 
 	return centerPos;
@@ -190,57 +311,26 @@ std::vector<Elite::Vector2> Formation::GetPath() const
 	return m_Path;
 }
 
-void Formation::SetFormation(const Elite::Vector2& desiredCenter, const Elite::Vector2& desiredRightVector, FormationType formation, bool isLooseMovement, int nrGroups)
+void Formation::SetBasicFormation()
 {
-	m_DesiredFormationCenter = desiredCenter;
-	m_DesiredFormationRightVector = desiredRightVector;
-	m_CurrentFormation = formation;
-	m_IsLooseMovement = isLooseMovement;
-
-	//Minimum number is 1
-	m_NrGroups = std::max(1, nrGroups);
-
-	for (Group* pGroup : m_pGroups)
-	{
-		delete pGroup;
-		pGroup = nullptr;
-	}
-
-	m_pGroups.clear();
-
-	for (int index{}; index < nrGroups; ++index)
-	{
-		m_pGroups.push_back(new Group(m_MaxGroupSize));
-	}
-
-	Elite::Vector2 right{ m_DesiredFormationRightVector.GetNormalized() };
-	Elite::Vector2 forward{ -right.y,right.x };
-
-	RegisterOffsetFromCenter(m_CurrentCenter, forward);
-
-	//Choose a sorting
-	int nrUnitsPerGroup{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrGroups)) };
-	int startIndex{};
-	int totalIndex{};
-
-	switch (formation)
+	//Choose a sorting and commander
+	switch (m_CurrentFormation)
 	{
 	case FormationType::Line:
 		SortAgentsBasedOnForwardness();
+		m_pCommandingGroup = m_pGroups[0];
 		break;
 	case FormationType::Circle:
-		SortAgentsBasedOnDistance();
+		SortAgentsBasedOnDistanceDecreasing();
 		break;
 	}
 
 	//Place in sub formations
+	int nrUnitsPerGroup{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / m_NrGroups)) };
+	int totalIndex{};
+
 	for (Group* pGroup : m_pGroups)
 	{
-		for (size_t index{}; index < m_pAgents.size(); ++index)
-		{
-			pGroup->RemoveUnitFromGroup(m_pAgents[index]);
-		}
-
 		for (int index{}; index < nrUnitsPerGroup; ++index)
 		{
 			if (totalIndex == m_pAgents.size()) break;
@@ -250,3 +340,40 @@ void Formation::SetFormation(const Elite::Vector2& desiredCenter, const Elite::V
 		}
 	}
 }
+
+void Formation::SetCustomFormation()
+{
+	m_pCommandingGroup = m_pGroups[0];
+	SortAgentsBasedOnForwardness();
+
+	//The nearest agent
+	if (m_pAgents.size() > 0)
+	{
+		m_pGroups[0]->AddUnitToGroup(m_pAgents[0]);
+	}
+
+	SortAgentsBasedOnRightness();
+
+	//Place in sub formations
+	int nrUnitsPerGroup{ static_cast<int>(ceil(static_cast<float>(m_pAgents.size()) / 2)) };
+	int totalIndex{};
+
+	for (Group* pGroup : m_pGroups)
+	{
+		if (pGroup == m_pGroups[0]) continue;
+
+		for (int index{}; index < nrUnitsPerGroup; ++index)
+		{
+			if (totalIndex == m_pAgents.size()) break;
+
+			//The commander can't be assigned to both groups
+			if (m_pAgents[totalIndex]->GetGroup() == nullptr)
+			{
+				pGroup->AddUnitToGroup(m_pAgents[totalIndex]);
+			}
+
+			++totalIndex;
+		}
+	}
+}
+

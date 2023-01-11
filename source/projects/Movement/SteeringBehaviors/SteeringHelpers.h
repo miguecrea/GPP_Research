@@ -162,4 +162,4 @@ struct Goal
 	}
 };
 
-enum class FormationType { Line, Circle, Square };
+enum class FormationType { Line, Circle, Arrow };
