@@ -1,6 +1,6 @@
 # RTS Formation Movement
 This is my reseach project for the course "Gameplay Programming" at Howest University of Applied Sciences.
-The whole project written in c++ and is made using the Elite-Engine. The list of the files added by me can be found at the bottom of this readme.
+The whole project is written in c++ and is made using the Elite-Engine. The list of the files added by me can be found at the bottom of this readme.
 ## What is this project about?
 In my research I'm figuring out how to make different formations using flocking and steering behaviours. 
 My goal was to create shapes without having to offset the position by fixed values, I wanted a system for more organic shapes.
@@ -13,7 +13,7 @@ The second part of my project was finding a way to make the units traverse the w
 
 ## How is this implemented?
 I started with a little setup: Every RTS-like game needs a way of selecting units and the location where the units should go. 
-When you hold the left mouse button, you can move your mouse in any direction to create a selection rectangle. The units are assigned to the formation after releasing the button. I did this by checking if the middle position of any my agents is inside the currently selected rectangle.
+When you hold the left mouse button, you can move your mouse in any direction to create a selection rectangle. The units are assigned to the formation after releasing the button. I did this by checking if the middle position of any of my agents is inside the currently selected rectangle.
 
 The size and direction of the formation can also be adjusted by holding and dragging right mouse button at any location. If you just click at a location, the size and rotation will stay the same. The camera movement was already implemented in the engine, only thing I changed there was setting the middle mouse button for this purpose. 
 
@@ -29,7 +29,7 @@ The most common ones are "Seek" and "Face", they are respectivelly used for seek
 
 Other usefull steerings are so called "Flocking steerings", some examples are "Separation", "Cohesion" and "Velocity matching". This type of steering takes position and/or velocity of the neighboring agents into account.
 
-The last type of steering behaviours that I use are "Combined steerings", with those behaviours you can easyly combine multiple steerings together. I only use the "blended steering" in this research. As it allows you to set how much influence every steering has on the end result.
+The last type of steering behaviours that I use are "Combined steerings", with those behaviours you can easily combine multiple steerings together. I only use the "blended steering" in this research. As it allows you to set how much influence every steering has on the end result.
 
 ### Organic formations
 
@@ -46,13 +46,13 @@ After that I tried a similar technique with a circle. The math for that is: dire
 
 ![ClusteringProblem](https://user-images.githubusercontent.com/114002276/211952501-823e8b1b-2bb5-48bc-91d5-725218d87515.gif)
 
-Adding a seek to the opposite side helped a lot, but the code started to look to complicated. I came to the idea that I could use the current group center as the formation center and add another seek towards the end target. I combined both of the circle implementations for the "Loose movement".
+Adding a seek to the opposite side helped a lot, but the code started to look too complicated. I came to the idea that I could use the current group center as the formation center and add another seek towards the end target. I combined both of the circle implementations for the "Loose movement".
 
-There after I searched for a way to implement the "Seek desired location" in the line formation, I simply replaced the Begin and End positions by an offseted position from the current group center. The result was realy great.
+There after I searched for a way to implement the "Seek desired location" in the line formation, I simply replaced the Begin and End positions by an offseted position from the current group center. The result was really great.
 
 ### Multiple lines
 
-Next step was implementing more than one line, the first method was to place the units in front of the center position in the first row and the others in the second row. This did not work out very wel, the main troubles were that the rows must contain the same ammount of agents, otherwise the whole group got pulled back. (the average position was pulled towards the larger group)
+Next step was implementing more than one line, the first method was to place the units in front of the center position in the first row and the others in the second row. This did not work out very wel, the main troubles were that the rows must contain the same amount of agents, otherwise the whole group got pulled back. (the average position was pulled towards the larger group)
 
 A second approach was to split the group in two separate groups, therefore I needed to create a manager, the "Formation" class. Once one of the settings in the UI is changed, the agents are redistributed to the best fittng group. I achieve this by sorting all agents by a criterium, for example how much forward. The math that helps in sorting like this is: dot product of the direction from an agent to the formation center with the forward vector of the formation, if this result is larger, it means the agent is in front, otherwise it is in the back. The center of our formation becomes the average position of the centers of the groups.
 
@@ -64,7 +64,7 @@ I found two fixes for this issue, setting the formations so that they are someho
 
 ### Back to path finding
 
-We already implemented A* path finding with a small optimisation during the semester, but it was not 100% suitable for my needs. The problem was that the basic implementation doesn't account for the size of the group. My solution for that was to crop the portals by the size of the group. This worked in cases when a group was not to large. My second approach for the problem was to offset the final path point perpendicular to the direction where the agents will come from. As you can see below, this works nice for single line formations, but not for larger groups. Althought it isn't the perfect solution, I wil let this for now.
+We already implemented A* path finding with a small optimisation during the semester, but it was not 100% suitable for my needs. The problem was that the basic implementation doesn't account for the size of the group. My solution for that was to crop the portals by the size of the group. This worked in cases when a group was not too large. My second approach for the problem was to offset the final path point perpendicular to the direction where the agents will come from. As you can see below, this works nice for single line formations, but not for larger groups. Althought it isn't the perfect solution, I will let this for now.
 
 ![Moving next to obstacle](https://user-images.githubusercontent.com/114002276/211942830-b2a34321-3877-4a3b-9fa8-f956dcfbf4ed.gif)
 
@@ -76,10 +76,10 @@ I'm really happy with the results, you can view them below!
 ![FinalResult](https://user-images.githubusercontent.com/114002276/211960929-d0a7d5a7-d0a8-4c7d-9967-1125ca6055a5.gif)
 ![FinalResultArrow](https://user-images.githubusercontent.com/114002276/211961935-77390449-14b0-4cda-86ac-f304d3d73a55.gif)
 
-My conclusion is that this system is fun to play with and after some polishing it could be used in a real game. While making project I found out that dot and cross products are very usefull and finally understood how to use them correctly. 
+My conclusion is that this system is fun to play with and after some polishing it could be used in a real game. While making the project I found out that dot and cross products are very usefull and finally understood how to use them correctly. 
 
 ## Next research topics
-If you want, you can do a follow up project based on my work. The would recomend to work on the thing where I did not have time to finish:
+If you want, you can do a follow up project based on my work. I would recommend to work on the things where I did not have time to finish:
 1. Correct offset when moving next to obstacles. (The path finder self could also take the formation width into account)
 2. Subgroups of the formation should always keep a relative position to eachother.
 Other also interesting features would be:
