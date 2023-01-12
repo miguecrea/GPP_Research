@@ -57,9 +57,9 @@ void Formation::CalculatePath(const Elite::Vector2& destiation, Elite::NavGraph*
 
 	//Not working 100% correctly: cropping the portals
 	const float formationOffset{ m_DesiredFormationRightVector.Magnitude() + 0.5f };
-	m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions, formationOffset + m_UnitSpace);
+	//m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions, formationOffset + m_UnitSpace);
 
-	//m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions);
+	m_Path = Elite::NavMeshPathfinding::FindPath(m_CurrentCenter, destiation, pNavGraph, debugNodePositions, portals, visitedNodePositions);
 
 	if (m_Path.size() > 0)
 	{
