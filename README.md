@@ -71,7 +71,7 @@ We already implemented A* path finding with a small optimisation during the seme
 Notice that we need to use 90 degrees or -90 degrees from our direction based on the fact that the obstacle is at the left or right side. Figuring out how to deal with it took me a while. I found that when we calculate the next direction, we can compare it to the current direction and see if it turns left or right. For this purpose we can use the cross product. In our case a negative result means -90 degrees and a positive result 90 degrees. We can calculate the needed vector by using the next formula: 90 degrees rotated vector = {-vector.y,vector.x}. 
 
 ## What are the results?
-I'm really happy with the results, you can view it below!
+I'm really happy with the results, you can view them below!
 
 ![FinalResult](https://user-images.githubusercontent.com/114002276/211960929-d0a7d5a7-d0a8-4c7d-9967-1125ca6055a5.gif)
 ![FinalResultArrow](https://user-images.githubusercontent.com/114002276/211961935-77390449-14b0-4cda-86ac-f304d3d73a55.gif)
