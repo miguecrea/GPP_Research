@@ -54,7 +54,13 @@ There after I searched for a way to implement the "Seek desired location" in the
 
 Next step was implementing more than one line, the first method was to place the units in front of the center position in the first row and the others in the second row. This did not work out very wel, the main troubles were that the rows must contain the same ammount of agents, otherwise the whole group got pulled back. (the average position was pulled towards the larger group)
 
-A second approach was to split the group in two separate groups, therefore I needed to create a manager, the "Formation" class. Once one of the settings in UI is changed, the agents are redistributed to the best fittng group. I achieve this by sorting all agents by a criterium, for example how much forward. The math that helps in sorting like this: dot product of the direction from an agent to the formation center with the forward vector of the formation, if this result is larger, it means the agent is in front, otherwise it is in the back.
+A second approach was to split the group in two separate groups, therefore I needed to create a manager, the "Formation" class. Once one of the settings in the UI is changed, the agents are redistributed to the best fittng group. I achieve this by sorting all agents by a criterium, for example how much forward. The math that helps in sorting like this is: dot product of the direction from an agent to the formation center with the forward vector of the formation, if this result is larger, it means the agent is in front, otherwise it is in the back. The center of our formation becomes the average position of the centers of the groups.
+
+The formation class gave me the posibility to create custom formations with circles and lines, but there seemed to be one problem. The middle position of the formation is not always where we want it to be. This results in not reaching the target position and due to this the formation never reaches the end destination.
+
+![FormationCenter](https://user-images.githubusercontent.com/114002276/211958511-e58d94e1-0e35-4e65-a9d5-b7990c43a563.gif)
+
+I found two fixes for this issue, setting the formations so that they are somehow symetrical (for example all circles have the same center) or selecting a leader group, the center of this group becomes the center of whole formation. I played a little bit around with this and did an attempt to create an arrow with a leader in front of it. (This implementation does not work 100%, as a single unit is much faster than a line formation)
 
 ### Back to path finding
 
@@ -65,6 +71,12 @@ We already implemented A* path finding with a small optimisation during the seme
 Notice that we need to use 90 degrees or -90 degrees from our direction based on the fact that the obstacle is at the left or right side. Figuring out how to deal with it took me a while. I found that when we calculate the next direction, we can compare it to the current direction and see if it turns left or right. For this purpose we can use the cross product. In our case a negative result means -90 degrees and a positive result 90 degrees. We can calculate the needed vector by using the next formula: 90 degrees rotated vector = {-vector.y,vector.x}. 
 
 ## What are the results?
+I'm really happy with the results, you can view it below!
+
+![FinalResult](https://user-images.githubusercontent.com/114002276/211960929-d0a7d5a7-d0a8-4c7d-9967-1125ca6055a5.gif)
+![FinalResultArrow](https://user-images.githubusercontent.com/114002276/211961935-77390449-14b0-4cda-86ac-f304d3d73a55.gif)
+
+My conclusion is that this system is fun to play with and after some polishing it could be used in a real game. While making project I found out that dot and cross products are very usefull and finally understood how to use them correctly. 
 
 ## Next research topics
 If you want, you can do a follow up project based on my work. The would recomend to work on the thing where I did not have time to finish:
