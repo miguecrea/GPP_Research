@@ -1,7 +1,7 @@
 # RTS Formation Movement
 This is my reseach project for the course "Gameplay Programming" at Howest University of Applied Sciences.
 The whole project is written in c++ and is made using the Elite-Engine. The list of the files added by me can be found at the bottom of this readme.
-## What is this project about?
+# ## What is this project about?
 In my research I'm figuring out how to make different formations using flocking and steering behaviours. 
 My goal was to create shapes without having to offset the position by fixed values, I wanted a system for more organic shapes.
 
